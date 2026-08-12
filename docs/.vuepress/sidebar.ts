@@ -1,0 +1,151 @@
+import type { ThemeSidebarItem } from 'vuepress-theme-plume'
+
+export const zhSidebar: ThemeSidebarItem[] = [
+  {
+    text: '从这里开始',
+    collapsed: false,
+    items: [
+      { text: '介绍', link: '/guide/intro/' },
+      { text: '快速开始', link: '/guide/get-started/' },
+      { text: '功能概览', link: '/guide/features/' },
+      { text: '越狱模式', link: '/guide/jailbreak-mode/', badge: 'Late-load' },
+      { text: '与 KernelSU 的区别', link: '/guide/yukisu-vs-kernelsu/', badge: '重点' },
+      {
+        text: '切换至 YukiSU',
+        collapsed: true,
+        items: [
+          { text: '从 Magisk 切换', link: '/guide/switch/magisk/' },
+          { text: '从 KernelSU 切换', link: '/guide/switch/kernelsu/' },
+          { text: '从 APatch 切换', link: '/guide/switch/apatch/' },
+        ],
+      },
+      { text: '更新', link: '/guide/update/' },
+      { text: '常见问题', link: '/guide/faq/' },
+      { text: '基础概念', link: '/guide/information/' },
+      { text: '救砖与恢复', link: '/guide/rescue-bootloop/' },
+    ],
+  },
+  {
+    text: '管理器',
+    collapsed: true,
+    items: [
+      { text: '管理器概览', link: '/manager/overview/' },
+      { text: 'App Profile', link: '/manager/app-profile/' },
+      { text: 'SuperKey 认证', link: '/manager/superkey/' },
+      { text: '分区与 Ramdisk 工具', link: '/manager/partition/' },
+    ],
+  },
+  {
+    text: '模块',
+    collapsed: true,
+    items: [
+      { text: '模块系统', link: '/modules/overview/' },
+      { text: 'MetaModule', link: '/modules/meta-module/' },
+      { text: '模块挂载', link: '/modules/magic-mount/' },
+      { text: 'WebUI 开发', link: '/modules/webui/' },
+      { text: 'Lua 插件', link: '/modules/plugin/', badge: '开发中' },
+    ],
+  },
+  {
+    text: 'YukiZygisk',
+    collapsed: true,
+    items: [
+      { text: '介绍', link: '/yukizygisk/intro/' },
+      { text: '功能', link: '/yukizygisk/features/' },
+      { text: '模块兼容性', link: '/yukizygisk/modules/' },
+    ],
+  },
+  {
+    text: '开发者',
+    collapsed: true,
+    items: [
+      { text: '开发者概览', link: '/dev/overview/' },
+      { text: '内核集成', link: '/dev/integration/' },
+      { text: '构建指南', link: '/dev/build/' },
+      { text: 'Ramdisk Editor 协议', link: '/dev/ramdisk-protocol/' },
+    ],
+  },
+  {
+    text: '疑难解答',
+    collapsed: true,
+    items: [
+      { text: '常见问题排查', link: '/troubleshoot/common/' },
+      { text: '如何有效提问', link: '/troubleshoot/asking/' },
+    ],
+  },
+]
+
+export const enSidebar: ThemeSidebarItem[] = [
+  {
+    text: 'Start here',
+    collapsed: false,
+    items: [
+      { text: 'Introduction', link: '/en/guide/intro/' },
+      { text: 'Get started', link: '/en/guide/get-started/' },
+      { text: 'Feature overview', link: '/en/guide/features/' },
+      { text: 'Jailbreak mode', link: '/en/guide/jailbreak-mode/', badge: 'Late-load' },
+      { text: 'YukiSU vs KernelSU', link: '/en/guide/yukisu-vs-kernelsu/', badge: 'Key' },
+      {
+        text: 'Switch to YukiSU',
+        collapsed: true,
+        items: [
+          { text: 'From Magisk', link: '/en/guide/switch/magisk/' },
+          { text: 'From KernelSU', link: '/en/guide/switch/kernelsu/' },
+          { text: 'From APatch', link: '/en/guide/switch/apatch/' },
+        ],
+      },
+      { text: 'Update', link: '/en/guide/update/' },
+      { text: 'FAQ', link: '/en/guide/faq/' },
+      { text: 'Core concepts', link: '/en/guide/information/' },
+      { text: 'Rescue and recovery', link: '/en/guide/rescue-bootloop/' },
+    ],
+  },
+  {
+    text: 'Manager',
+    collapsed: true,
+    items: [
+      { text: 'Manager overview', link: '/en/manager/overview/' },
+      { text: 'App Profile', link: '/en/manager/app-profile/' },
+      { text: 'SuperKey authentication', link: '/en/manager/superkey/' },
+      { text: 'Partition and Ramdisk tools', link: '/en/manager/partition/' },
+    ],
+  },
+  {
+    text: 'Modules',
+    collapsed: true,
+    items: [
+      { text: 'Module system', link: '/en/modules/overview/' },
+      { text: 'MetaModule', link: '/en/modules/meta-module/' },
+      { text: 'Module mounting', link: '/en/modules/magic-mount/' },
+      { text: 'WebUI development', link: '/en/modules/webui/' },
+      { text: 'Lua plugins', link: '/en/modules/plugin/', badge: 'WIP' },
+    ],
+  },
+  {
+    text: 'YukiZygisk',
+    collapsed: true,
+    items: [
+      { text: 'Introduction', link: '/en/yukizygisk/intro/' },
+      { text: 'Features', link: '/en/yukizygisk/features/' },
+      { text: 'Module compatibility', link: '/en/yukizygisk/modules/' },
+    ],
+  },
+  {
+    text: 'Developers',
+    collapsed: true,
+    items: [
+      { text: 'Developer overview', link: '/en/dev/overview/' },
+      { text: 'Kernel integration', link: '/en/dev/integration/' },
+      { text: 'Build guide', link: '/en/dev/build/' },
+      { text: 'Ramdisk Editor protocol', link: '/en/dev/ramdisk-protocol/' },
+    ],
+  },
+  {
+    text: 'Troubleshooting',
+    collapsed: true,
+    items: [
+      { text: 'Common troubleshooting', link: '/en/troubleshoot/common/' },
+      { text: 'How to ask', link: '/en/troubleshoot/asking/' },
+    ],
+  },
+]
