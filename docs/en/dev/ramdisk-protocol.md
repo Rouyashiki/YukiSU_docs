@@ -28,4 +28,4 @@ All integers are unsigned little-endian. Each request/response begins with 20 by
 
 The protocol supports STAT, LIST, ranged READ, replacing/creating/copying/moving/removing nodes, metadata updates, atomic DUMP, multiple Ramdisk fragments and structured ELF header inspection. Node IDs are stable only for the process lifetime; multi-fragment clients must use roots returned by `HELLO` / `LIST_RAMDISKS`.
 
-Read the repository's [complete protocol specification](https://github.com/Anatdx/YukiSU/blob/main/docs/ramdisk-editor-protocol.md) before implementing a client. It defines all node fields, 17 opcodes, capability bits, status codes and the 96-byte ELF header record.
+Read the repository's [complete protocol specification](https://github.com/Rouyashiki/YukiSU/blob/main/docs/ramdisk-editor-protocol.md) before implementing a client. It defines all node fields, 17 opcodes, capability bits, status codes and the 96-byte ELF header record.

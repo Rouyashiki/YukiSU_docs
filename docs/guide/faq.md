@@ -7,19 +7,20 @@ title: 常见问题
 
 ## YukiSU 是 KernelSU 换皮吗？
 
-不是。它继续兼容 KernelSU 的模块、MetaModule、App Profile 和 LKM Hook，但用户空间已经用 C++ 重写，管理器、认证扩展和 YukiZygisk 也由 YukiSU 自己维护。生态能共用，不代表管理器和 `ksud` 能互换。完整说明见 [YukiSU 与 KernelSU 的区别](/guide/yukisu-vs-kernelsu/)。
+不是。它继续兼容 KernelSU 的模块、MetaModule、App Profile，并让 TSR/LKM Hook 与上游语义对齐；用户空间则用 C++ 重写，管理器、认证扩展、ImgPatch 与 YukiZygisk 由 YukiSU 维护。生态能共用，不代表管理器和 `ksud` 能互换。完整说明见 [YukiSU 与 KernelSU 的区别](/guide/yukisu-vs-kernelsu/)。
 
 ## 哪些设备受支持？
 
 当前正式范围是：
 
 - ARM64；
+- Android 12（API 31）及以上；
 - GKI 2.0；
 - Linux 5.10 及以上；
 - LKM 模式，`CONFIG_KSU=m`；
 - 具备项目要求的 Kprobes、Kretprobes 与 syscall tracepoints。
 
-GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。进入范围也不代表任意 LKM 都能加载，仍需匹配 KMI、符号与内核配置。
+Android 11 及以下、GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。当前全量构建覆盖从 `android12-5.10` 到 `android17-6.18` 的 8 个标准 KMI；进入范围也不代表任意 LKM 都能加载，仍需匹配 KMI、vermagic、符号与内核配置。见[兼容范围](/guide/compatibility/)。
 
 ## “仅 LKM”是不是只有内核，没有用户空间？
 
@@ -27,7 +28,7 @@ GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。�
 
 ## 管理器能一键 Root 所有支持设备吗？
 
-不能。它能帮你修补镜像、直接安装和处理 OTA 槽位，但不知道你手里的镜像是不是当前固件，也不能把错误 KMI 的 `.ko` 变正确。KMI、分区和槽位还是得由你确认。开始前看[快速开始](/guide/get-started/)。
+不能。它能修补本地镜像、从支持 HTTP Range 的 HTTPS OTA/factory 包提取启动分区、直接安装和处理 OTA 槽位，但不知道你给的固件是否属于这台设备，也不能把错误 KMI 的 `.ko` 变正确。KMI、分区、槽位与 Ramdisk/ImgPatch 模式仍要确认。开始前看[快速开始](/guide/get-started/)。
 
 ## 只安装管理器 APK 会发生什么？
 
@@ -36,6 +37,10 @@ GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。�
 ## 为什么同为 Linux 5.10，LKM 还是不能加载？
 
 因为 `5.10` 只是大版本。KMI、vermagic、符号、配置和厂商补丁只要有一项对不上，模块就可能加载失败。别强制加载，换匹配构建或拿设备对应内核树重编。
+
+## Ramdisk 与 ImgPatch 有什么区别？
+
+传统模式由启动 Ramdisk 中的 `ksuinit` 加载 LKM，可按布局修补 `boot` 或 `init_boot`。ImgPatch 把 bootstrap 与 LKM capsule 直接放进 `boot` 的 ARM64 内核，只接受带内核的 AOSP `boot` 镜像。它们都是 LKM 模式，不是谁比谁“Root 更深”；输入、备份与恢复路径不同。见[安装与镜像模式](/guide/install-modes/)。
 
 ## SuperKey 是必须的吗？
 
@@ -47,7 +52,7 @@ GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。�
 
 ## 管理器内置 `ksud` 和已安装 `ksud` 有什么区别？
 
-一个装在 APK 里，用来安装或更新；另一个已经落到设备上，真正负责启动和模块处理。所以更新 APK 不等于设备里的 `ksud` 也更新了。两边差太多时，就会出现“界面里有按钮，点了后端却不认识”的情况。
+一个装在 APK 里，一个落在 `/data/adb/ksud`。主页按实际 ELF 校验并提供手动同步；设置中的冷启动自动同步默认关闭。运行时文件被替换还会触发完整性警报。无论哪种同步都只处理 `ksud`，不会顺便更新 LKM、启动镜像或重启。
 
 ## 每个模块都需要 MetaModule 吗？
 
@@ -59,7 +64,7 @@ GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。�
 
 ## YukiSU 的 MetaModule 与 KernelSU 一样吗？
 
-一样。YukiSU 完全遵守官方 KernelSU 的 MetaModule 接口、脚本和生命周期，切换时可以保留现有 MetaModule。具体后端或普通模块自己的 Android、ABI 和版本限制仍然有效，但这不是协议差异。
+公开协议一致。YukiSU 遵守官方 KernelSU 的 MetaModule 接口、脚本和生命周期；设备、版本和接口要求仍匹配时，切换通常可以保留现有后端。具体挂载实现与普通模块自己的 Android、ABI 和版本限制仍需实际验证。
 
 ## 什么是越狱模式？
 
@@ -67,7 +72,7 @@ GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。�
 
 ## 从 KernelSU 切换要先卸载所有模块吗？
 
-不需要。built-in KernelSU 恢复原厂 boot 后不要先重启，直接使用当前会话仍存在的 KernelSU Root 安装 YukiSU；KernelSU LKM 则连镜像都不用恢复，可直接安装。MetaModule 与普通模块可以保留。详见[从 KernelSU 切换](/guide/switch/kernelsu/)。
+不需要全部移除。built-in KernelSU 恢复原厂 boot 后不要先重启，直接使用当前会话仍存在的 KernelSU Root 安装 YukiSU；KernelSU LKM 则连镜像都不用恢复，可直接安装。符合公开协议且设备/版本要求仍满足的 MetaModule 与普通模块通常可以保留，重启后仍要逐层验证。详见[从 KernelSU 切换](/guide/switch/kernelsu/)。
 
 ## Magisk / KernelSU 模块能直接复用吗？
 
@@ -87,7 +92,7 @@ GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。�
 
 ## YukiZygisk 为什么进入安全模式？
 
-连续发生 3 次 Zygote 崩溃后，YukiZygisk 会停止注入，避免设备持续陷入进程崩溃循环。应先禁用最近添加的 Zygisk 模块，导出持久化诊断，再恢复功能。
+内核按 Zygote socket name 记录 PID；同名 Zygote 的 PID 更替累计达到 3 次后，YukiZygisk 会进入全局注入安全模式。这个计数证明发生了进程代际更替，不能单独证明死因或责任模块。先导出触发前后的持久化诊断，再按[功能与状态](/yukizygisk/features/)核对。
 
 ## App Profile 是 YukiSU 独有的吗？
 
@@ -95,11 +100,11 @@ GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。�
 
 ## 更新管理器后是否必须立刻更新 LKM？
 
-不一定。APK、设备里的 `ksud`、LKM 和模块不是同一个东西。先看发布说明到底改了哪一层，别每次更新 APK 都顺手把整套环境一起翻新。
+不一定。APK、设备里的 `ksud`、LKM、安装布局和模块不是同一个东西。先看发布说明到底改了哪一层；主页可单独同步 `ksud`，内核或早启动修复才需要重新走 LKM 修补。跨越 UAPI 或启动布局变化时，也别假设旧组合一定兼容。
 
 ## OTA 后应该怎么处理？
 
-先确认设备是否 A/B、OTA 是否已经完成、当前与未使用槽位分别是什么。管理器提供安装到未使用槽位的入口，但目标仍需用户确认。不要在 OTA 状态不明确时猜槽位，也不要用旧固件镜像修补新槽位。
+先确认设备是否 A/B、OTA 是否已经完成、当前与未使用槽位分别是什么。管理器会从未使用槽位 `boot` 读取目标 KMI；Ramdisk 模式按目标布局选分区，ImgPatch 只写目标槽位的 `boot`。不要在 OTA 状态不明确时猜槽位，也不要用旧固件镜像修补新槽位。
 
 ## YukiSU 能保证通过完整性或 Root 检测吗？
 
@@ -107,4 +112,4 @@ GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。�
 
 ## 遇到问题应该先发什么？
 
-别只发一句“不能用”。至少带上设备构建指纹、内核与 KMI、LKM/管理器/`ksud` 版本、分区和槽位、模块列表、最后一次改动，以及**第一条**有效错误。YukiZygisk 问题直接导出管理器诊断。模板见[如何有效提问](/troubleshoot/asking/)。
+别只发一句“不能用”。至少带上设备构建指纹、内核与 KMI、LKM/管理器/`ksud` 状态（完整性不匹配时保留已安装侧“未知”）、分区和槽位、模块列表、最后一次改动，以及**第一条**有效错误。YukiZygisk 问题直接导出管理器诊断。模板见[如何有效提问](/troubleshoot/asking/)。

@@ -17,9 +17,9 @@ The goal was never just another screen that grants root. YukiSU makes a few deli
 
 - **Root belongs in the kernel.** The caller, resulting identity and available capabilities should be explicit.
 - **Userspace is maintained here.** C++ `ksud`, `ksuinit` and `su` let installation, modules, diagnostics and new features evolve together.
-- **Upstream compatibility should not be broken for novelty.** LKM hooks, Features 0–4, the module lifecycle and MetaModule follow official KernelSU contracts.
-- **Extras remain optional.** YukiZygisk, SuperKey, dynamic managers, Features 100–103 and UTS View are additions, not dependencies of basic root.
-- **The manager should do real work.** It handles grants and modules, but also LKM installation, partition backups, ramdisk editing and diagnostics.
+- **Upstream compatibility should not be broken for novelty.** LKM hooks, Features 0–4, the module lifecycle and MetaModule follow official KernelSU contracts; WebView Zygote unmount uses ID 5 in the upstream-reserved range.
+- **Extras remain optional.** YukiZygisk, SuperKey, dynamic managers, Features 100–104 and UTS View are additions, not dependencies of basic root.
+- **The manager should do real work.** It handles grants and modules, plus traditional Ramdisk/ImgPatch installation, remote-image extraction, partition backups, Ramdisk editing and diagnostics.
 
 This separation makes troubleshooting simpler. Root works but a Zygisk module does not? Start with YukiZygisk. Scripts run but files are absent? Check MetaModule before rebuilding the LKM.
 
@@ -27,12 +27,15 @@ This separation makes troubleshooting simpler. Root works but a Zygisk module do
 
 | Area | Requirement |
 | --- | --- |
+| Android | Android 12 (API 31) or newer |
 | Architecture | ARM64 |
 | Kernel | GKI 2.0, Linux 5.10 or newer |
 | Installation | LKM only, `CONFIG_KSU=m` |
-| Kernel facilities | `CONFIG_KPROBES=y`, `CONFIG_KRETPROBES=y`, `CONFIG_HAVE_SYSCALL_TRACEPOINTS=y` |
+| Kernel facilities | `CONFIG_MODULES=y`, `CONFIG_KPROBES=y`, `CONFIG_KRETPROBES=y`, `CONFIG_HAVE_SYSCALL_TRACEPOINTS=y` |
 
-GKI 1.0, non-GKI, ARM32, x86_64 and built-in `CONFIG_KSU=y` are not supported. YukiZygisk includes 64-bit and 32-bit runtimes for app processes on an ARM64 phone; that does not add ARM32 device support.
+Android 11 and older, GKI 1.0, non-GKI, ARM32, x86_64 and built-in `CONFIG_KSU=y` are not supported. YukiZygisk includes 64-bit and 32-bit runtimes for app processes on an ARM64 phone; that does not add ARM32 device support.
+
+Current full builds cover `android12-5.10`, `android13-5.10`, `android13-5.15`, `android14-5.15`, `android14-6.1`, `android15-6.6`, `android16-6.12` and `android17-6.18`. These are KMI build targets, not a table for selecting an LKM from the phone's Android version. See [Compatibility](/en/guide/compatibility/) for the exact boundary.
 
 ::: warning Matching the major kernel version is not enough
 KMI, symbol versions, vermagic, configuration and vendor changes still have to match. Loading a random `kernelsu.ko` merely because both devices say “6.1” is an excellent way to turn a clear compatibility error into a boot problem.
@@ -43,10 +46,11 @@ KMI, symbol versions, vermagic, configuration and vendor changes still have to m
 | Component | Job |
 | --- | --- |
 | `kernelsu.ko` | Kernel authorization, hooks, App Profile and Features |
-| `ksuinit` | Connect the LKM to the early boot environment |
+| `ksuinit` | Load the LKM and connect it to init in the traditional Ramdisk layout |
+| ImgPatch bootstrap | Load an embedded LKM capsule directly from the kernel in `boot` |
 | `ksud` | Modules, installation, SELinux handling and manager backend |
 | `su` | Open an elevated session for an authorized caller |
-| YukiSU Manager | Status, grants, modules, LKM install, backups and diagnostics |
+| YukiSU Manager | Status, grants, modules, load-layout selection, image download/patching, backups and diagnostics |
 | MetaModule | Mount module files into system paths |
 | YukiZygisk | Inject Zygote and load compatible Zygisk Next modules |
 
@@ -60,11 +64,11 @@ YukiSU does not support built-in integration. The C++ userspace, manager, module
 
 ### TSR is not a private hook design
 
-TSR is shorthand for **Tracepoint Syscall Redirect**. The actual hook is identical to official KernelSU LKM; the shorter name simply fits better in UI and logs.
+TSR is shorthand for **Tracepoint Syscall Redirect** and follows the tracepoint syscall-redirect model used by current official KernelSU LKM. YukiSU still carries its own ports and extensions, so the modules are not identical or interchangeable; the acronym does not denote a second exclusive hook design.
 
 ### MetaModule is not forked either
 
-YukiSU follows the official KernelSU MetaModule interface, scripts and ordering. A working MetaModule can remain installed when switching from KernelSU.
+YukiSU follows the official KernelSU public MetaModule interface, scripts and ordering. An existing backend can usually remain when its device, version and interface requirements still match, but real mount behavior must be verified.
 
 ### YukiZygisk is a bonus, not the foundation
 
@@ -89,6 +93,8 @@ When reporting a problem, include YukiSU's own LKM, `ksud` and manager versions 
 ## Where next
 
 - Installing: [Get started](/en/guide/get-started/)
+- Checking Android, KMI and kernel support: [Compatibility](/en/guide/compatibility/)
+- Choosing between Ramdisk and ImgPatch: [Installation and image modes](/en/guide/install-modes/)
 - Choosing between projects: [YukiSU vs KernelSU](/en/guide/yukisu-vs-kernelsu/)
 - Trying it temporarily: [Jailbreak mode](/en/guide/jailbreak-mode/)
 - Installing modules: [Module system](/en/modules/overview/) and [MetaModule](/en/modules/meta-module/)
@@ -98,6 +104,6 @@ When reporting a problem, include YukiSU's own LKM, `ksud` and manager versions 
 
 - `kernel/`: GPL-2.0-only
 - Other YukiSU-owned code: GPL-3.0-or-later
-- Project: [YukiSU README](https://github.com/Anatdx/YukiSU/blob/main/README.md)
+- Project: [YukiSU README](https://github.com/Rouyashiki/YukiSU/blob/main/docs/README.md)
 - Telegram: [t.me/manosaba](https://t.me/manosaba)
-- Issues: [GitHub Issues](https://github.com/Anatdx/YukiSU/issues)
+- Issues: [GitHub Issues](https://github.com/Rouyashiki/YukiSU/issues)

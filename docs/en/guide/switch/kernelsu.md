@@ -15,7 +15,7 @@ Install YukiSU Manager in the current KernelSU environment and grant it root fro
 
 Confirm that:
 
-- the device is within YukiSU's ARM64, GKI 2.0, Linux 5.10+ scope;
+- the device runs Android 12 (API 31) or newer and is within YukiSU's ARM64, GKI 2.0, Linux 5.10+ scope;
 - the latest YukiSU Manager is installed;
 - a YukiSU LKM matching the current kernel KMI is available;
 - stock boot matching the exact firmware is available for built-in KernelSU;
@@ -30,7 +30,7 @@ This covers a kernel containing KernelSU, including `CONFIG_KSU=y` or a replacem
 1. Install YukiSU Manager and grant it root in KernelSU Manager.
 2. Use KernelSU's restore function to restore stock boot matching the current firmware.
 3. **Do not reboot after restoration.**
-4. Open YukiSU Manager and use direct install with the matching-KMI YukiSU LKM.
+4. Open YukiSU Manager, explicitly choose traditional Ramdisk or ImgPatch, then use direct install with the matching-KMI YukiSU LKM.
 5. Reboot after installation completes.
 
 The running kernel still contains KernelSU even after the on-disk boot image has been restored. YukiSU Manager therefore keeps the root granted for this current session and can prepare the next boot directly. There is no need for an intermediate unrooted boot.
@@ -45,10 +45,12 @@ The LKM path is even shorter: **do not restore the image and do not uninstall th
 
 1. Install YukiSU Manager.
 2. Grant it root in KernelSU Manager.
-3. Select the matching-KMI LKM in YukiSU Manager and use direct install.
+3. Select the matching-KMI LKM and target layout in YukiSU Manager, then use direct install.
 4. Reboot when installation completes.
 
-YukiSU updates the LKM and corresponding userspace in the boot image directly; restoring stock and patching again is unnecessary.
+When traditional Ramdisk is retained, YukiSU replaces the old layout's LKM and userspace. When switching to ImgPatch, the backend writes a capsule only into `boot` and, during device installation, removes known legacy KernelSU Ramdisk files from `boot`/`init_boot`. It stops on a Magisk Ramdisk or content that cannot be cleaned safely; do not manually remove half the layout and continue.
+
+See [Installation and image modes](/en/guide/install-modes/) for inputs and restore behavior.
 
 ## Modules, MetaModule and configuration
 
@@ -68,6 +70,7 @@ Do not reinstall MetaModule merely because the root solution changed. Only modul
 ## Verify after reboot
 
 - YukiSU Manager reports an installed environment with reasonable LKM, `ksud` and manager versions.
+- The Home-reported Ramdisk or ImgPatch mode matches the selected migration layout.
 - Authorized apps can request root.
 - MetaModule and ordinary module state remains visible.
 - Modules that mount system files actually work.

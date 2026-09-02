@@ -17,9 +17,9 @@ YukiSU 是一套面向 **ARM64 GKI 2.0** 设备的内核级 Root 方案，fork �
 
 - **Root 该归内核管。** 哪个应用能拿 Root、拿到什么身份和能力，都应该有明确规则。
 - **用户空间要自己掌握。** `ksud`、`ksuinit` 和 `su` 用 C++ 重写，安装、模块、诊断和新功能不用被另一套实现牵着走。
-- **上游生态别瞎折腾。** LKM Hook、Feature 0–4、模块生命周期和 MetaModule 都按官方 KernelSU 的约定来，没必要为了“显得不同”破坏兼容。
-- **额外功能按需开启。** YukiZygisk、SuperKey、动态管理器、Feature 100–103 和 UTS View 都是加分项，不会硬塞进基础 Root 链路。
-- **管理器得真的能干活。** 除了授权和模块，它还能处理 LKM 安装、分区备份、Ramdisk 编辑与诊断。
+- **上游生态别瞎折腾。** LKM Hook、Feature 0–4、模块生命周期和 MetaModule 都按官方 KernelSU 的约定来；WebView Zygote umount 使用上游预留区的 ID 5。
+- **额外功能按需开启。** YukiZygisk、SuperKey、动态管理器、Feature 100–104 和 UTS View 都是加分项，不会硬塞进基础 Root 链路。
+- **管理器得真的能干活。** 除了授权和模块，它还能处理传统 Ramdisk/ImgPatch 安装、远程镜像提取、分区备份、Ramdisk 编辑与诊断。
 
 这样做有个很实际的好处：哪一层出问题，就查哪一层。Root 正常但 Zygisk 模块没工作时，不必一上来就怀疑 LKM；模块脚本能跑但文件没挂载时，也应该先去看 MetaModule。
 
@@ -29,10 +29,11 @@ YukiSU 是一套面向 **ARM64 GKI 2.0** 设备的内核级 Root 方案，fork �
 
 | 项目 | 要求 |
 | --- | --- |
+| Android | Android 12（API 31）及以上 |
 | 架构 | ARM64 |
 | 内核 | GKI 2.0，Linux 5.10 及以上 |
 | 安装方式 | 仅 LKM，`CONFIG_KSU=m` |
-| 内核配置 | `CONFIG_KPROBES=y`、`CONFIG_KRETPROBES=y`、`CONFIG_HAVE_SYSCALL_TRACEPOINTS=y` |
+| 内核配置 | `CONFIG_MODULES=y`、`CONFIG_KPROBES=y`、`CONFIG_KRETPROBES=y`、`CONFIG_HAVE_SYSCALL_TRACEPOINTS=y` |
 
 下面这些目前不支持：
 
@@ -40,6 +41,8 @@ YukiSU 是一套面向 **ARM64 GKI 2.0** 设备的内核级 Root 方案，fork �
 - ARM32、x86_64；
 - built-in `CONFIG_KSU=y`；
 - 缺少必要 probe 或 syscall tracepoint 的内核。
+
+当前完整构建覆盖 `android12-5.10`、`android13-5.10`、`android13-5.15`、`android14-5.15`、`android14-6.1`、`android15-6.6`、`android16-6.12` 与 `android17-6.18`。这些是 KMI 构建目标，不是按手机 Android 版本直接选 `.ko` 的表；完整边界见[兼容范围](/guide/compatibility/)。
 
 YukiZygisk 会附带 64 位和 32 位运行组件，所以能处理 ARM64 手机上的 32 位应用。这里的“32 位”说的是应用进程，不是 ARM32 手机。
 
@@ -52,14 +55,15 @@ KMI、符号版本、vermagic、内核配置和厂商改动都得匹配。看到
 | 部分 | 它在做什么 |
 | --- | --- |
 | `kernelsu.ko` | 在内核里处理 Root、Hook、App Profile 和 Feature |
-| `ksuinit` | 在启动阶段接上 LKM 与 init 环境 |
+| `ksuinit` | 在传统 Ramdisk 布局中于启动阶段加载 LKM、接入 init 环境 |
+| ImgPatch bootstrap | 在 `boot` 内核中直接装载嵌入的 LKM capsule |
 | `ksud` | 跑模块、处理安装、配置 SELinux，并给管理器提供后端 |
 | `su` | 为已经获得授权的调用方打开提权会话 |
-| YukiSU Manager | 看状态、批授权、装模块、装 LKM、备份分区和导出诊断 |
+| YukiSU Manager | 看状态、批授权、装模块、选择加载布局、修补/下载镜像、备份分区和导出诊断 |
 | MetaModule | 把模块文件挂到 `/system`、`vendor` 等系统路径 |
 | YukiZygisk | 注入 Zygote，并加载兼容 Zygisk Next 的模块 |
 
-排查时也按这个顺序来：先看 LKM 和管理器认证，再看 `ksud` 与 Root 授权，然后是 MetaModule，最后才轮到 YukiZygisk。管理器能打开，只能说明 APK 装上了，不能证明整套环境都在工作。
+排查时先看 LKM 和管理器认证，再看 `ksud` 与 Root 授权；模块依赖系统文件挂载时再查 MetaModule，进程注入问题则单独查 YukiZygisk。管理器能打开，只能说明 APK 装上了，不能证明整套环境都在工作。
 
 ## 几个最容易误解的地方
 
@@ -69,11 +73,11 @@ YukiSU 只是**不提供 built-in 内核集成**。管理器、C++ 用户空间�
 
 ### TSR 不是 YukiSU 私有 Hook
 
-TSR 只是 **Tracepoint Syscall Redirect** 的缩写。实际 Hook 与官方 KernelSU LKM 一致，这个名字只是为了在界面和日志里少写几个字。
+TSR 只是 **Tracepoint Syscall Redirect** 的缩写，沿用当前官方 KernelSU LKM 的 tracepoint syscall redirect 模型。YukiSU 仍有自己的移植与扩展，两边不是相同、可互换的模块；这个简称本身也不代表另一套独占 Hook。
 
 ### MetaModule 也没有另起炉灶
 
-YukiSU 完全遵循官方 KernelSU 的 MetaModule 接口、脚本和执行顺序。你原来在 KernelSU 中使用的 MetaModule，切换后不用因为“换了 Root”就重新安装。
+YukiSU 遵循官方 KernelSU 的公开 MetaModule 接口、脚本和执行顺序。原有后端在设备、版本与接口要求仍匹配时通常可以保留，但兼容性仍要按实际挂载结果验证。
 
 ### YukiZygisk 是加分项，不是地基
 
@@ -103,6 +107,8 @@ YukiSU 不保证通过所有完整性或 Root 检测，也不保证任意 Magisk
 ## 接下来去哪
 
 - 准备安装：看[快速开始](/guide/get-started/)；
+- 确认 Android、KMI 和内核是否在范围内：看[兼容范围](/guide/compatibility/)；
+- 分不清 Ramdisk 与 ImgPatch：看[安装与镜像模式](/guide/install-modes/)；
 - 还在选 KernelSU 还是 YukiSU：看[与 KernelSU 的区别](/guide/yukisu-vs-kernelsu/)；
 - 想先临时试一下：看[越狱模式](/guide/jailbreak-mode/)；
 - 准备装模块：看[模块系统](/modules/overview/)和 [MetaModule](/modules/meta-module/)；
@@ -112,6 +118,6 @@ YukiSU 不保证通过所有完整性或 Root 检测，也不保证任意 Magisk
 
 - `kernel/`：GPL-2.0-only
 - 其他 YukiSU 自有代码：GPL-3.0-or-later
-- 项目说明：[YukiSU 中文 README](https://github.com/Anatdx/YukiSU/blob/main/docs/zh/README.md)
+- 项目说明：[YukiSU 中文 README](https://github.com/Rouyashiki/YukiSU/blob/main/docs/zh/README.md)
 - Telegram：[t.me/manosaba](https://t.me/manosaba)
-- 问题反馈：[GitHub Issues](https://github.com/Anatdx/YukiSU/issues)
+- 问题反馈：[GitHub Issues](https://github.com/Rouyashiki/YukiSU/issues)

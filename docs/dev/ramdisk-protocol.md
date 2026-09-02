@@ -30,4 +30,4 @@ ksud boot-ramdisk-editor <source.img> <output.img>
 
 协议支持 STAT、LIST、分段 READ、替换/创建/复制/移动/删除节点、更新元数据、原子 DUMP、多 Ramdisk 分片以及结构化 ELF header 检查。节点 ID 只在当前进程生命周期内稳定；多分片模式应使用 `HELLO` / `LIST_RAMDISKS` 返回的根 ID。
 
-完整协议还有节点记录、17 个 opcode、capability mask、状态码和 96 字节 ELF header。真要实现客户端，请直接读仓库里的[完整规范](https://github.com/Anatdx/YukiSU/blob/main/docs/ramdisk-editor-protocol.md)；这页是导览，不是拿来猜二进制字段偏移的。
+完整协议还有节点记录、17 个 opcode、capability mask、状态码和 96 字节 ELF header。真要实现客户端，请直接读仓库里的[完整规范](https://github.com/Rouyashiki/YukiSU/blob/main/docs/ramdisk-editor-protocol.md)；这页是导览，不是拿来猜二进制字段偏移的。

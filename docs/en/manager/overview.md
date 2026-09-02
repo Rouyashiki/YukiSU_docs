@@ -1,171 +1,137 @@
 ---
 permalink: /en/manager/overview/
-title: Manager
+title: Manager overview
 ---
 
 # YukiSU Manager
 
-YukiSU Manager is an Android app built with Kotlin and Jetpack Compose. It combines runtime state, app authorization, modules, YukiZygisk, LKM installation and device-maintenance tools, communicating with kernel-side YukiSU through `ksud`.
+YukiSU Manager is the Android management interface, built with Kotlin and Jetpack Compose. The current APK requires Android 12 (API 31) or later.
 
-The manager is not root itself. Installing the APK only provides the interface. Grants and most tools require a compatible YukiSU LKM in the boot chain, successful authentication and working userspace.
-
-## Where the manager fits
+The manager is not root by itself. Authorization, modules, plugins, patching, and maintenance work only when a compatible YukiSU LKM is loaded, this APK has authenticated as the manager, and the required userspace components are available.
 
 ```text
-User action
+UI action
    ↓
 YukiSU Manager
-   ↓ authentication and requests
-ksud / su
-   ↓
-kernelsu.ko
+   ├─ driver / ioctl ─→ kernelsu.ko
+   └─ ksud commands ──→ installation, modules, plugins, and maintenance
 ```
 
-Module installation, image patching and diagnostics also pass through `ksud`. MetaModule and YukiZygisk are additional layers controlled from the manager but with independent runtime states.
+An APK that opens, a Home page that sees YukiSU, and a healthy device-side `ksud` are three different states.
 
-This explains why an APK can open normally while still showing “not installed” or unavailable pages. A visible UI does not prove that the kernel, authentication and userspace chain is connected.
+## The five main pages
 
-## Home: read status before acting
+The current bottom navigation order is:
 
-Layouts change between releases, but the important states are:
-
-| State | Question answered | First check on failure |
+| Page | Main purpose | Requires a working YukiSU root chain |
 | --- | --- | --- |
-| Kernel and device | Is architecture/kernel in scope? | ARM64, GKI 2.0, Linux 5.10+ |
-| YukiSU / LKM | Did the kernel recognize YukiSU, and which full version? | Boot image, KMI and LKM load log |
-| Hook | Are TSR and related runtime facilities ready? | Kernel config, tracepoints and first kernel error |
-| Manager authentication | Does the kernel trust this APK? | Package/signature, SuperKey and device clock |
-| `ksud` | Which embedded and installed userspace versions are active? | Synchronization and mixed builds |
-| MetaModule | Is an active mount backend available? | Disabled/pending states and boot logs |
-| YukiZygisk | Is it supported, enabled and running? | Master switch, safe mode and diagnostics |
+| Home | Versions, authentication, working mode, daemon, and runtime status | Basic device information does not; management actions do |
+| Plugins | Install and manage Lua plugins executed by `ksud` | Yes |
+| Superuser | App root, non-root profiles, and dynamic managers | Yes |
+| Modules | Module install/update/state, repositories, Action, WebUI, and shortcuts | Yes |
+| Settings | Features, authentication, updates, diagnostics, uninstall, and appearance | Some items do |
 
-A home screenshot is a useful summary, but not a replacement for the full version strings and logs in a report.
+The Plugins tab is present on current `main`; it is no longer only a development-branch placeholder. See [Lua plugin management](/en/manager/plugins/) for its use and security boundary.
 
-## Superuser: grants are not a permanent global switch
+## Home: identify the layer behind each state
 
-The Superuser page lists applications that requested or can receive policy. Each app can be allowed or denied root, with App Profile for finer behavior.
+Pull to refresh Home, then record these items first:
 
-### Before granting
-
-- verify package name and source;
-- understand why root is required and whether scope can be reduced;
-- check for background services or remote interfaces;
-- re-evaluate trust after application updates.
-
-A root grant gives an app extensive control over the device. Do not approve a request merely because it appeared, and remove stale test grants.
-
-### App Profile
-
-App Profile controls UID/GID, supplementary groups, capabilities, SELinux domain, namespaces and `no_new_privs`. It enables advanced isolation and least privilege, but a wrong value can crash an app or hide storage from it. Read [App Profile](/en/manager/app-profile/).
-
-### Module unmount policy
-
-Per-app module-unmount policy affects which module mounts are visible in an app namespace. It is not the same as revoking root and does not guarantee that the app cannot observe other device-state signals.
-
-## Modules: inspect ordinary modules and MetaModule together
-
-The Modules page can:
-
-- install a module ZIP;
-- show name, version, author and description;
-- enable, disable, update and remove modules;
-- trigger `action.sh`;
-- open module WebUI;
-- identify the active MetaModule and pending state.
-
-Many state changes complete after a reboot. A card appearing after installation only proves that installer content was written. Scripts, mounts and final behavior must be verified separately through the [Module system](/en/modules/overview/).
-
-Remove the current MetaModule and reboot before installing a replacement. Do not keep batch-installing ordinary modules while the backend is pending update or removal.
-
-## YukiZygisk
-
-The YukiZygisk page controls YukiSU's optional built-in Zygisk implementation:
-
-- enable or disable the feature;
-- display support and runtime state;
-- list discovered modules;
-- show Zygote, injection and module counts;
-- export diagnostics retained across reboots;
-- report safe mode after consecutive crashes.
-
-YukiZygisk is more than a UI toggle: after it is enabled, YukiSU still has to complete Zygote injection and module loading. Verify the result against the target process and actual module behavior. See [YukiZygisk introduction](/en/yukizygisk/intro/).
-
-## LKM patch and installation
-
-| Function | Use | Main risk |
+| Home item | What it establishes | What it cannot prove by itself |
 | --- | --- | --- |
-| Direct install | Update current slot from an already rooted environment | Wrong partition or mismatched current image |
-| Install to inactive slot | Carry YukiSU into a post-OTA A/B slot | Wrong slot or changed OTA state |
-| Patch selected image | Generate an output containing YukiSU LKM | Input is not exact firmware or wrong image type |
-| Select local `.ko` | Device-specific or self-built LKM | KMI, symbol or config mismatch |
-| Bundled KMI resource | Use a resource shipped with the manager | Choosing a similarly named but incompatible build |
+| Full YukiSU version and UAPI | Kernel-exposed version and whether manager/kernel UAPI match | Modules, plugins, or YukiZygisk work correctly |
+| Signature / SuperKey badges | Authentication paths currently visible to the manager | Every app has root |
+| Kernel release | Kernel identity in the current UTS view; the original can be shown when UTS View is active | The target image necessarily has the same KMI |
+| `ksud daemon` | Whether the APK-bundled and installed files match | The LKM or boot image was updated too |
+| Working mode | Hook type and LKM load method | Every hook, daemon, and target process is healthy |
+| SELinux / Seccomp | Current system state | Disabling a protection will solve a compatibility issue |
+| Zygisk / MetaModule | The implementation currently detected | A module's final behavior has been verified |
 
-The manager can provide detection and recommendations; the user still owns the final write target. Complete the recovery checklist in [Get started](/en/guide/get-started/) first.
+### Reading Working mode
 
-## Jailbreak mode
+The manager combines the reported hook type and load method, for example:
 
-When YukiSU is not active, SELinux is Permissive and the manager contains a matching-KMI LKM, Home can offer Jailbreak mode. It follows upstream late-load behavior to establish YukiSU after Android has booted. An existing root shell runs `ksud late-load` directly; otherwise Magica provides the initial bootstrap.
+```text
+TSR Hook | Ramdisk
+TSR Hook | ImgPatch
+TSR Hook | Lateload
+```
 
-This is not a persistent installation, and the early module entry changes from `post-fs-data.sh` to `late-load.sh`. Read [Jailbreak mode](/en/guide/jailbreak-mode/) for requirements, stage differences and auto-jailbreak.
+- `TSR Hook` is the syscall-hook type reported by the current kernel.
+- `Ramdisk` means the LKM came through the boot-ramdisk path.
+- `ImgPatch` means the LKM is embedded directly in the kernel Image inside `boot`.
+- `Lateload` means it was loaded after Android had already booted.
 
-## Partition Manager
+This describes how YukiSU was loaded; it is not a health check. Diagnose real failures with the full version, first kernel error, `ksud` logs, and behavior in the target process.
 
-Partition Manager can inspect partitions, create backups, write images and run supported AnyKernel3 packages.
+### When `ksud` is replaced
 
-### Inspect and back up
+The current manager verifies the actual `/data/adb/ksud` file against its bundled `libksud.so`; it does not rely only on a version string. On mismatch:
 
-Inspection is read-only. A backup reads device content into a file. Verify the file size, location and readability—an empty or automatically removed backup is useless during recovery.
+- Home shows a warning and marks `ksud daemon` as abnormal.
+- On Android 13 and later, a security notification can be posted after notification permission is granted.
+- Tapping `ksud daemon` opens version details and a button that restores the bundled file.
 
-### Flash
+A mismatch proves that the two binaries differ, not which app or process changed the file. Syncing repairs only device-side `ksud`; it does not update the LKM or boot image. See [Settings and maintenance](/en/manager/settings/).
 
-Flashing directly modifies a partition. Verify partition name, slot, input path, size and summary. Never copy a partition name from a tutorial for another device.
+### Reboot menu
 
-### AnyKernel3
+The Home power menu currently offers reboot, soft restart, Recovery, Bootloader, Fastbootd, Download, and EDL. “Userspace reboot” is added when Android reports that the device supports it.
 
-The manager can execute supported AnyKernel3 packages, but package scripts remain controlled by the package author. Review source, device scope, target partitions and removal path. Being openable by the manager is not proof that a package fits the device.
+Selecting an entry immediately requests that action; there is no common confirmation step. Confirm that the device implements the requested target, especially Download or EDL. The `ksud` soft restart is also distinct from Android userspace reboot.
 
-## Ramdisk Editor
+## Superuser and App Profile
 
-Ramdisk Editor uses a constrained `ksud` session to inspect, modify and repack Ramdisks in supported boot images.
+The Superuser page supports search, categories, sorting, system-app visibility, batch actions, swipe grant/revoke, and pull-to-refresh. Packages sharing one Android UID are managed as a group because the kernel policy ultimately applies to the UID.
 
-It is for users who know the exact file they intend to change, not a general file manager. Verify input provenance, target partition and repacked output. See [Ramdisk Editor protocol](/en/dev/ramdisk-protocol/) for development details.
+An app can use the default, a template, or a custom root profile, plus a separate non-root module-unmount policy. Dynamic-manager trust is a separate high-privilege identity and is not an ordinary root grant. See [App Profile](/en/manager/app-profile/).
 
-## Updates and version relationships
+## Modules and MetaModule
 
-Download stable builds only from [YukiSU Releases](https://github.com/Anatdx/YukiSU/releases/latest). Supported manager channels can verify corresponding PGP or APK signatures.
+The Modules page installs from local ZIPs or module repositories, manages enable/disable/update/uninstall state, and exposes `action.sh`, WebUI, and desktop shortcuts when a module declares them. The list supports pull-to-refresh and sorting.
 
-One environment has several versions:
+A module card appearing proves only that its directory was written. Scripts, mounts, and final behavior may require the next boot stage. System-file mounting still belongs to one MetaModule backend. See the [Module system](/en/modules/overview/) and [MetaModule](/en/modules/meta-module/).
 
-- manager APK;
-- `ksud` embedded in that APK;
-- `ksud` installed on the device;
-- full LKM version and KMI;
-- MetaModule and ordinary modules;
-- YukiZygisk userspace components.
+## YukiZygisk status page
 
-Do not describe the whole environment with the manager version alone. After an APK update, inspect home state before deciding whether to synchronize `ksud`, update LKM or change modules. Those are separate actions.
+When Home detects YukiZygisk, its dedicated status page separates:
 
-## Operations that modify the device
+- active kernel injection and safe mode;
+- Zygote monitor state and this-session injection counts;
+- the actual state of native-module and native-process targets;
+- anonymous loading, denylist behavior, and dmesg logging settings.
 
-These operations write data or change state:
+A configured native target is not necessarily injected. Current `yzctl` lets the UI distinguish unknown, failed, crashed, and injected states; unknown may also mean detected or redirected without a final report. Preserve the exact row status in a report. See the [YukiZygisk introduction](/en/yukizygisk/intro/).
 
-- direct and inactive-slot installation;
-- flashing patched images or partitions;
-- running an AnyKernel3 package;
-- permanent YukiSU removal;
-- synchronizing device-side `ksud`;
-- installing, updating, disabling or removing modules;
-- changing SuperKey, signature trust, ADB root or SELinux-related settings.
+## LKM patching and installation
 
-Save page logs, target summaries and stock images before acting. Verify the affected layer afterward instead of relying on one “success” toast.
+The installation page now covers traditional ramdisk patching, direct-kernel `ImgPatch`, remote HTTPS OTA/factory extraction, current-slot installation, and post-OTA inactive-slot installation. Supported images, backups, and embedded settings differ by path.
 
-## Recommended daily workflow
+Read [LKM patching and installation](/en/manager/install/) and prepare the stock image for the current firmware plus a working recovery route before writing anything.
 
-1. Open Home and verify LKM, authentication and `ksud` state.
-2. Grant only applications with a real need.
-3. Check modules and MetaModule for pending state.
-4. Read release notes before manager or LKM updates.
-5. Save logs for every high-risk operation.
-6. Stop making changes and export the current state when something becomes abnormal.
+## Settings, Features, and UTS View
 
-The manager's value is not only putting tools in one place. It makes each runtime layer visible, helping avoid confusing a module failure with an LKM failure or an APK update with a complete environment update.
+Settings separates items with different owners:
+
+- formal kernel Features live on [Feature controls](/en/manager/feature-control/);
+- profile templates, default module unmount, SuperKey storage, and [UTS View](/en/manager/uts-view/) remain in Configuration;
+- update checks, WebUI engine, automatic `ksud` sync, auto-jailbreak, and module soft restart are app/userspace settings;
+- logs, unmount paths, and permanent uninstall are maintenance tools;
+- language, theme, DPI, background, and Home visibility change only the manager UI.
+
+Similar-looking switches do not imply the same lifecycle. Kernel Features, app preferences, live system state, and next-patch configuration take effect at different times.
+
+## Partition and Ramdisk tools
+
+The installation page's advanced-tools entry opens Partition Manager. It can inspect slots and partitions, back up and flash images, run AnyKernel3, and open supported `boot`, `init_boot`, or `vendor_boot` ramdisks in the editor. See [Partition and Ramdisk tools](/en/manager/partition/).
+
+## A reliable routine check
+
+1. Pull to refresh Home and record full YukiSU version, UAPI, `ksud`, and Working mode.
+2. Resolve `ksud`, UAPI, or root warnings before changing modules.
+3. Grant only UIDs with a real need; evaluate every package in a shared UID group.
+4. Check modules, MetaModule, and plugins for pending-reboot or error states.
+5. Before changing a Feature, UTS setting, image, or partition, identify whether it is live, reboot-applied, or repatch-required.
+6. Preserve page output and logs after high-risk operations, then verify the affected layer's real behavior.
+
+The manager's value is not merely collecting buttons. It exposes LKM, authentication, `ksud`, authorization, modules, plugins, and injection as separate layers—and they should be verified separately when troubleshooting.

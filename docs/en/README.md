@@ -5,7 +5,7 @@ config:
   - type: doc-hero
     hero:
       name: YukiSU
-      text: A modern root experience for GKI devices
+      text: A modern root experience for Android 12+ ARM64 GKI devices
       tagline: Keep the upstream ecosystem. Add the good stuff.
       image:
         src: /YukiSU-mini.svg
@@ -15,11 +15,8 @@ config:
           text: Get started →
           link: /en/guide/get-started/
         - theme: alt
-          text: Compare with KernelSU →
-          link: /en/guide/yukisu-vs-kernelsu/
-        - theme: alt
           text: View on GitHub →
-          link: https://github.com/Anatdx/YukiSU
+          link: https://github.com/Rouyashiki/YukiSU
   - type: features
     features:
       - title: Kernel-level root
@@ -28,7 +25,7 @@ config:
         link: /en/guide/intro/
       - title: A focused technical path
         icon: 🧭
-        details: ARM64 GKI 2.0 and LKM only. A smaller scope, with every layer designed to fit together.
+        details: Android 12+, ARM64 GKI 2.0 and LKM only, with eight current build targets spanning kernel 5.10 through 6.18.
         link: /en/guide/yukisu-vs-kernelsu/
       - title: Modern C++ userspace
         icon: ⚙️
@@ -36,7 +33,7 @@ config:
         link: /en/guide/features/
       - title: Flexible module mounting
         icon: 🧩
-        details: Fully follows the official KernelSU MetaModule contract. Keep existing modules and choose the backend you want.
+        details: MetaModule follows the upstream public contract and lets you choose a backend; existing modules still need device, version, and backend checks.
         link: /en/modules/meta-module/
       - title: Secure authentication
         icon: 🔐
@@ -44,11 +41,11 @@ config:
         link: /en/manager/superkey/
       - title: Complete management
         icon: 🛠️
-        details: App grants, modules, LKM installation, partition backups and Ramdisk tools all live in one manager.
+        details: Grants, Features, image patch/restore, modules, Lua plugins, partition backups, and Ramdisk tools live in one manager.
         link: /en/manager/overview/
       - title: YukiZygisk included
         icon: 🧬
-        details: Run compatible modules without Magisk or Zygisk Next. Leave it off when you do not need Zygisk.
+        details: Ordinary Zygisk modules and native ZN targets load and report separately; core root stays independent when it is off.
         link: /en/yukizygisk/intro/
       - title: Jailbreak mode
         icon: 🚀

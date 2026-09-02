@@ -18,11 +18,13 @@ title: 救砖与恢复
 
 两者不是同一个按钮的不同叫法。操作前先导出安装日志，并看清管理器显示的当前槽位。
 
+再记录首页的运行方式：Ramdisk 通常要恢复被修改的 `boot` / `init_boot` Ramdisk；ImgPatch 的 capsule 在 `boot` 内核中。`boot-restore` 会先验证原厂备份，ImgPatch 没有可用备份时也只会移除能够验证的 capsule，不会对不明内核盲改。命令边界见[启动镜像命令](/dev/boot-images/)。
+
 ## Android 已经进不去
 
 这时没有一条适合所有设备的万能命令，只能按设备布局恢复：
 
-1. 找出当前活动槽位和最后修改的分区；
+1. 找出当前活动槽位、最后修改的分区和所选 Ramdisk/ImgPatch 模式；
 2. 准备**同一设备、同一固件版本**的原厂镜像；
 3. 使用该设备支持的 fastboot、fastbootd、Recovery 或厂商工具写回正确分区；
 4. 成功启动后先别重新安装，保留现场信息再排查。
@@ -33,6 +35,8 @@ title: 救砖与恢复
 
 - 设备型号、Android 版本、完整 `uname -r`；
 - 当前/目标槽位和被修补的分区；
+- 管理器当时报告的 Ramdisk / ImgPatch / late-load 运行方式；
+- 输入与输出镜像的大小、SHA-256，以及原厂备份位置；
 - 管理器版本、LKM 来源和完整 YukiSU 版本；
 - 修补/刷写日志；
 - 能拿到的话，再附 bootloader 或 kernel 日志。

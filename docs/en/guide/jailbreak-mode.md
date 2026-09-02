@@ -15,15 +15,14 @@ Jailbreak mode enables YukiSU only for the current boot. After reboot, it must b
 
 ## Requirements
 
-The manager exposes this path only in a suitable state. The current implementation requires:
+The UI uses only two live conditions to expose and enable this entry:
 
-- an ARM64 GKI 2.0 device on Linux 5.10 or newer;
-- YukiSU Manager installed while no YukiSU kernel is currently active;
-- a bundled `kernelsu.ko` matching the running KMI;
-- **SELinux currently Permissive**;
-- permission for the manager to start the required service; auto-jailbreak also needs app autostart.
+- no YukiSU kernel is currently active; and
+- **SELinux is currently Permissive**.
 
-Permissive is a bootstrap requirement for this path, not a requirement to leave SELinux disabled during an ordinary persistent YukiSU installation.
+Visibility proves only these UI prerequisites. Successful execution additionally requires an Android 12 (API 31) or newer ARM64 GKI 2.0 / Linux 5.10+ device, a bundled `kernelsu.ko` matching the running KMI, a usable existing-root or Magica bootstrap path, and the manager service. Auto-jailbreak also needs app autostart permission.
+
+Permissive is a bootstrap requirement for this path, not a requirement to leave SELinux disabled during an ordinary persistent YukiSU installation. A full APK currently packages standard targets from `android12-5.10` through `android17-6.18`; the running kernel KMI must still match. See [Compatibility](/en/guide/compatibility/).
 
 ## Two bootstrap paths
 
@@ -101,13 +100,13 @@ Do not leave a device Permissive long-term solely for Jailbreak mode without und
 
 ## Troubleshooting
 
-- **No Jailbreak entry:** check whether YukiSU is already active, SELinux is really Permissive, the device is supported and a matching KMI LKM is bundled.
+- **No Jailbreak entry:** check whether YukiSU is already active and whether SELinux is really Permissive. Device support and a matching bundled LKM determine execution success, not entry visibility.
 - **No matching LKM:** do not bypass version checks or force another KMI. Use a build with the correct resource or compile for the running kernel.
 - **Module partially works:** inspect whether initialization exists only in `post-fs-data.sh`, then check `late-load.sh`, MetaModule `metamount.sh`, `post-mount` and `service` logs.
 - **YukiSU disappears after reboot:** expected for a temporary session. Use the normal LKM installation flow for persistence.
 
 ## References
 
-- [Official KernelSU late-load documentation](https://github.com/tiann/KernelSU/blob/main/website/docs/guide/module.md#late-load-mode)
+- [Official KernelSU late-load documentation](https://kernelsu.org/guide/module.html#late-load-mode)
 - [YukiSU get started](/en/guide/get-started/)
 - [Module system](/en/modules/overview/)

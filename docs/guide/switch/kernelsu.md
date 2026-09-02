@@ -15,7 +15,7 @@ title: 从 KernelSU 切换
 
 准备这些就够了：
 
-- 设备属于 YukiSU 支持的 ARM64、GKI 2.0、Linux 5.10+ 范围；
+- 设备运行 Android 12（API 31）及以上，并属于 YukiSU 支持的 ARM64、GKI 2.0、Linux 5.10+ 范围；
 - 已安装最新 YukiSU 管理器；
 - 有匹配当前内核 KMI 的 YukiSU LKM；
 - 如果当前是 built-in KernelSU，准备与当前固件完全匹配的原厂 boot；
@@ -30,7 +30,7 @@ title: 从 KernelSU 切换
 1. 安装 YukiSU 管理器，并在 KernelSU 管理器中授予它 Root；
 2. 使用 KernelSU 的恢复功能还原当前固件的原厂 boot；
 3. **还原完成后不要重启；**
-4. 直接打开 YukiSU 管理器，选择直接安装，让它把匹配 KMI 的 YukiSU LKM 安装到刚恢复的启动镜像；
+4. 直接打开 YukiSU 管理器，明确选择传统 Ramdisk 或 ImgPatch，再用直接安装把匹配 KMI 的 YukiSU LKM 写进刚恢复的启动链；
 5. 安装完成后重启。
 
 关键就是**还原后别急着重启**。磁盘上的 boot 已经恢复了，但内存里跑的还是 KernelSU 内核，刚授予 YukiSU 管理器的 Root 也还在。趁这一轮直接把 YukiSU 装好，再重启，一步到位。
@@ -45,10 +45,12 @@ LKM 切换更简单：**不需要先还原镜像，也不需要卸载现有 Kern
 
 1. 安装 YukiSU 管理器；
 2. 在 KernelSU 管理器中授予 YukiSU 管理器 Root；
-3. 在 YukiSU 管理器中选择匹配 KMI 的 LKM并直接安装；
+3. 在 YukiSU 管理器中选择匹配 KMI 的 LKM 与目标布局并直接安装；
 4. 安装完成后重启。
 
-YukiSU 会直接替换启动镜像里的 LKM 并更新用户空间，没必要先还原再修补，白绕一圈。
+继续使用传统 Ramdisk 时，YukiSU 会替换旧布局中的 LKM 与用户空间。切到 ImgPatch 时，后端只把 capsule 写进 `boot`，并在设备安装过程中清理由旧 KernelSU Ramdisk 留在 `boot` / `init_boot` 的已知文件。检测到 Magisk Ramdisk 或不能安全清理的内容时会停止；不要手动删一半后继续。
+
+两种布局的输入与恢复方式见[安装与镜像模式](/guide/install-modes/)。
 
 ## 模块、MetaModule 与配置怎么办
 
@@ -70,6 +72,7 @@ YukiSU 会直接替换启动镜像里的 LKM 并更新用户空间，没必要�
 重启后看几眼就行：
 
 - YukiSU 管理器显示已安装，LKM、`ksud` 与管理器版本合理；
+- 首页显示的 Ramdisk 或 ImgPatch 运行方式与迁移时选择一致；
 - 已授权应用可以正常请求 Root；
 - MetaModule 和普通模块状态仍在；
 - 需要系统文件挂载的模块实际生效；

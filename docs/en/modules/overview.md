@@ -5,146 +5,133 @@ title: Module system
 
 # Module system
 
-YukiSU follows KernelSU-style module directories, packages and boot stages while delegating system-file mounting to an external MetaModule. An ordinary module defines what it provides and when its scripts run. The MetaModule decides how required files appear at system paths.
+YukiSU root, module mounting and process injection are separate facilities. Keeping those boundaries visible prevents a failed mount, a skipped script and a failed Zygisk injection from being diagnosed as the same problem.
 
-This separation makes backends composable, while adding a compatibility relationship that users and module authors must check explicitly.
+| Component | Responsibility | Not its responsibility |
+| --- | --- | --- |
+| YukiSU core root | Kernel authorization, `su` and the main `ksud` path | Root does not require an ordinary module, MetaModule or YukiZygisk |
+| Ordinary module | Installed files, lifecycle scripts, properties and SELinux rules | It does not choose how `system/` is mounted |
+| MetaModule | Exposes ordinary-module file trees at system paths | It is neither a root provider nor a Zygisk implementation |
+| Lua plugin | Runs callbacks in the `ksud` Lua runtime | It is not an ordinary module and takes no part in MetaModule mounting |
+| Ordinary Zygisk module | Runs standard Zygisk callbacks in Zygote children | It requires YukiZygisk and cannot replace root or MetaModule |
+| Native ZN module | Injects selected native executables by name or path | It uses a separate ZN API, not the ordinary Zygisk API |
 
-## A module is more than its ZIP
+One ordinary module may contain scripts, system files, a WebUI, Zygisk libraries and a Native ZN manifest at the same time. Each part still follows its own activation path.
 
-The ZIP is only the distribution format. An installed ordinary module lives at:
+## Installed directory and common files
+
+Active modules live under:
 
 ```text
-/data/adb/modules/<module-id>/
+/data/adb/modules/<directory-id>/
 ```
 
-It may contain:
+Updates are staged under `/data/adb/modules_update/<directory-id>/` and merged during the next normal boot. The directory name is the runtime identity used to address a module. The `id` in `module.prop` remains display/update metadata, but cannot merge two different directories into one runtime instance.
 
-| File or directory | Purpose |
-| --- | --- |
-| `module.prop` | ID, name, version, author, description and other metadata |
-| `post-fs-data.sh` | Blocking early-boot preparation |
-| `service.sh` | Asynchronous background initialization during services |
-| `boot-completed.sh` | Work that requires Android framework boot completion |
-| `system.prop` | Properties loaded by YukiSU userspace |
-| `sepolicy.rule` | Additional module SELinux policy |
-| `system/` | Files to be exposed through the MetaModule backend |
-| `skip_mount` | Explicitly skip system-file mounting for this module |
-| `action.sh` | A user-triggered manager action |
-| `webroot/` | A module WebUI displayed by the manager |
-
-These files are optional except for the basic `module.prop` used to identify the module. Actual behavior depends on present content and the runtime environment.
-
-## Installed, enabled and working are different states
-
-After ZIP installation, a module enters `/data/adb/modules` or a pending-update area. Some state changes complete on the next boot.
-
-- **Installed:** files were written to a module directory.
-- **Enabled:** no `disable` state prevents the module from running.
-- **Executed:** the expected lifecycle scripts actually ran.
-- **Mounted:** MetaModule exposed the file tree at target paths.
-- **Working:** the system or target app shows the intended effect.
-
-An “installed” card does not prove that a module is effective. Troubleshooting starts by identifying the module type and the stage where progress stopped.
-
-## Boot stages and ordering
-
-YukiSU handles common scripts, module state, SELinux, properties and mounting during boot.
-
-| Stage | Typical use | Behavior |
+| File or directory | Purpose | Activation boundary |
 | --- | --- | --- |
-| `post-fs-data` | Early directories, policy and required preparation | Blocking; keep it short |
-| `post-mount` | Work that needs completed MetaModule mounts | Runs after mounting |
-| `service` | Daemons and tasks that need not block early boot | Asynchronous |
-| `boot-completed` | Tasks requiring Android framework boot completion | Latest normal stage |
+| `module.prop` | `id`, name, version, author, description, update/support links and other metadata | Installation and list scans |
+| `customize.sh` | Customize ZIP installation | Installation |
+| `post-fs-data.sh` | Blocking early preparation | Normal early boot stage |
+| `post-mount.sh` | Work requiring final module mounts | After `metamount.sh` |
+| `service.sh` | Daemons and asynchronous initialization | Service stage |
+| `boot-completed.sh` | Work requiring completed Android framework boot | Boot-completed stage |
+| `uninstall.sh` | Final cleanup | Boot after removal is scheduled |
+| `system.prop` | Properties applied through YukiSU's `resetprop` path | After early scripts, before mounting |
+| `sepolicy.rule` | Additional module SELinux rules | Before ordinary module scripts |
+| `system/` | File tree supplied to MetaModule | Next mount stage |
+| `skip_mount` | Keep `system/` out of the mount backend | Next mount stage |
+| `initrc/*.rc` | Content aggregated into pre-init `modules.rc` | Next full boot |
+| `action.sh` | User-triggered one-shot manager action | Runs immediately when selected |
+| `webroot/` | Module WebUI | When opened |
+| `zygisk/arm64-v8a.so`, `zygisk/armeabi-v7a.so` | Ordinary Zygisk libraries | New Zygote/app processes |
+| `zn_modules.txt` | Native ZN targets and libraries | New matching native processes; early targets use a next-boot snapshot |
 
-On the normal `post-fs-data` path, YukiSU handles module state, contexts and SELinux first, then runs MetaModule and ordinary-module `post-fs-data.sh`, loads `system.prop`, calls `metamount.sh`, and enters `post-mount`.
+`actionIcon` and `webuiIcon` in `module.prop` may point to relative files inside the module. Absolute paths, paths containing `..`, and missing files are rejected by the module list.
 
-A module must not wait indefinitely for framework services or networking from `post-fs-data.sh`. One blocked script can delay or break the whole boot chain.
+## Installed does not mean effective
 
-## Which modules need MetaModule?
+The manager can show a module card while its full payload is still staged for update. Verify each state separately:
 
-The following commonly work **without** MetaModule:
+1. **Installed:** the ZIP passed installation and produced pending state;
+2. **Enabled:** neither `disable` nor `remove` blocks the module;
+3. **Executed:** the expected lifecycle stage actually ran and succeeded;
+4. **Mounted:** the active MetaModule exposed `system/` at the target paths;
+5. **Process recreated:** a Zygisk or Native ZN target is not an old process;
+6. **Working:** the system component or target app shows a verifiable effect.
 
-- lifecycle scripts only;
-- `system.prop` only;
-- `sepolicy.rule` only;
-- `action.sh` or WebUI whose feature does not replace system files.
+`disable`, `remove` and update state affect later scans immediately. They cannot undo scripts already run during this boot, stop an existing service, remove current mounts, or extract a native library from a running process. Treat one complete reboot as the reliable convergence boundary for module state.
 
-The following commonly **require** MetaModule:
+## Normal boot order
 
-- files under `/system`, `/vendor`, `/product`, `/system_ext` and similar trees;
-- replaced system configuration, framework resources, native libraries or executables;
-- a declared dependency on OverlayFS, bind mounts or a particular backend.
+The current normal `post-fs-data` implementation runs in this order:
 
-Only one MetaModule may be active. It can provide installation, mount and removal interfaces. Read [MetaModule](/en/modules/meta-module/) for the full contract.
+1. common scripts from `/data/adb/post-fs-data.d`;
+2. pending update/removal handling, directory contexts and module SELinux rules;
+3. persisted feature restoration and required YukiSU userspace services;
+4. the MetaModule's `post-fs-data.sh`;
+5. ordinary-module `post-fs-data.sh` files;
+6. Lua plugin `post_fs_data` callbacks;
+7. module `system.prop` files;
+8. the active MetaModule's `metamount.sh`;
+9. per-app unmount configuration;
+10. `post-mount`, ordered as common scripts, MetaModule, ordinary modules, then Lua plugins.
 
-::: tip Relationship to current official KernelSU
-YukiSU fully follows official KernelSU's MetaModule interface and lifecycle, so an existing backend does not need reinstallation merely because the root solution changed. An ordinary module can still require a particular Android version, ABI, backend implementation or private tool.
-:::
+The `service` and `boot-completed` stages use the same common-script → MetaModule → ordinary-module → Lua-plugin order. Those stages do not block the whole chain in the same way as `post-fs-data`.
 
-## Module state files
+Consequently:
 
-The manager schedules next-boot state through markers in the module directory:
+- prepare files in `post-fs-data.sh`, but do not assume the final system path is already replaced;
+- put work that consumes mounted paths in `post-mount.sh`;
+- do not wait for networking or framework services from a blocking early stage;
+- place long-running work in `service.sh` instead of requiring repeated Action clicks.
 
-- `disable`: do not run this module;
-- `remove`: clean it during a later boot stage;
-- `update` or pending-update directory: apply an update on the next boot;
-- `skip_mount`: do not pass the `system/` tree to the mount backend.
+Jailbreak/late-load mode has already missed real early boot. Ordinary modules and MetaModule use `late-load.sh`, followed by property loading, mounting and later stages; this cannot send code back to an init or Zygote event that already passed. See [Jailbreak mode](/en/guide/jailbreak-mode/).
 
-Avoid manually toggling markers while a module or MetaModule update/removal is pending. Allow one complete reboot for state to converge.
+## Script environment and module configuration
 
-## Safe mode
+YukiSU supplies a common environment to installer/lifecycle scripts, including:
 
-In YukiSU safe mode, userspace skips normal `post-fs-data.d` and module scripts and disables all ordinary modules. The purpose is to return the device closer to a base-root state.
+- `KSU=true` and `YUKISU=1`;
+- `KSU_VER`, `KSU_VER_CODE`, `KSU_KERNEL_VER_CODE` and `KSU_UAPI_VER`;
+- `KSU_RUNTIME_MODE`;
+- `KSU_MODULE=<directory-id>` for module-specific scripts;
+- `ZYGISK_ENABLED=1` while the feature flag is on;
+- `KSU_LATE_LOAD=1` in late-load mode.
 
-Safe mode can identify a module-induced boot problem. It cannot repair an incompatible LKM, wrong partition or damaged boot image. Use [Rescue and recovery](/en/guide/rescue-bootloop/) if the device still fails before modules are involved.
+Do not use `ZYGISK_ENABLED` as proof that a particular Zygote or module was injected. It only describes the feature switch.
 
-## WebUI and Action
+Module scripts can also store their own values through `ksud module config`:
 
-### WebUI
+```sh
+ksud module config set mode balanced
+ksud module config get mode
+ksud module config set once 1 --temp
+```
 
-A module can ship HTML, CSS and JavaScript in `webroot/`. The manager displays it in a WebView and exposes supported `kernelsu` JavaScript bridge operations.
+The command selects the module through `KSU_MODULE`. Persistent values live in `/data/adb/ksu/module_configs/<directory-id>/persist.config`. `--temp` values override persistent values and are cleared at the beginning of the next `post-fs-data` run.
 
-This is not an ordinary web sandbox. A WebUI may launch root commands, read module data or change system configuration. Therefore:
+## When MetaModule is required
 
-- install modules only from trusted sources;
-- never concatenate unvalidated input into shell commands;
-- be cautious with remote scripts, frames and dynamic updates;
-- show a target summary and confirmation for dangerous actions.
+Script-only modules, properties, SELinux rules, and Action/WebUI features that do not replace system files usually need no MetaModule.
 
-### Action
+A module needs a suitable MetaModule when it exposes files under `/system`, `vendor`, `product`, `system_ext` and similar trees, or explicitly requires OverlayFS, bind mounts or Magic Mount semantics. Only one backend may be active. See [MetaModule](/en/modules/meta-module/) and [Module mounting](/en/modules/magic-mount/).
 
-`action.sh` suits a one-shot operation such as regenerating configuration, clearing module cache or exporting state. Long-running daemons belong in an appropriate lifecycle stage instead of repeated Action clicks.
+## Do not confuse the two safe modes
 
-## Evaluating compatibility before installation
+YukiSU **system safe mode** is triggered by Android safe-mode properties or kernel Volume Down detection. `ksud` skips common, ordinary-module, MetaModule and Lua-plugin stages, then writes `disable` for ordinary modules under `/data/adb/modules/`, including the MetaModule. It is a test and recovery path for module-layer boot failures.
 
-Check at least:
+YukiZygisk has a separate **injection safe mode**. When one named Zygote reaches the restart threshold, it suppresses YukiZygisk injection for the rest of the current kernel session. It does not turn off core root or disable ordinary modules and Lua plugins. See [YukiZygisk features and status](/en/yukizygisk/features/).
 
-1. supported Android versions, ABIs and the upstream KernelSU module lifecycle;
-2. required MetaModule backend and version;
-3. dependencies on Magisk-only tools, paths or built-in Zygisk;
-4. `customize.sh`, root shell, native libraries or WebUI content;
-5. changes to boot-critical files and a safe uninstall path;
-6. supported Android versions, ABIs and target app versions;
-7. recent maintenance, available source and credible issue tracking.
+System safe mode cannot repair a mismatched KMI, a wrong flashed partition or a damaged boot image. If the device still fails with modules disabled, use [Rescue and recovery](/en/guide/rescue-bootloop/).
 
-A selectable ZIP and an install log without red lines are not complete compatibility evidence.
+## Minimum pre-install review
 
-## Recommended rollout
+1. Android release, target ABI and target app version;
+2. required MetaModule and its version;
+3. dependencies on Magisk-only tools, paths or another Zygisk implementation;
+4. root installers, native libraries, WebUI, init rc or Native ZN manifests in the ZIP;
+5. which changes require a reboot and whether a reliable uninstall/rescue path exists;
+6. trustworthy distribution, source, maintenance history and issue channel.
 
-- Stabilize base root before adding MetaModule.
-- Start with one narrow, easily verifiable ordinary module.
-- Install or update only a small batch at a time.
-- Reboot and inspect scripts, mounts and target behavior after each batch.
-- Retain the previous version and configuration before an important update.
-- Disable the latest changes first instead of immediately wiping the environment.
-
-## Common misconceptions
-
-- **“Installed means mounted.”** Installation and mounting occur at different stages.
-- **“A `system/` directory guarantees a mount.”** An active MetaModule is still required, and `skip_mount` must be absent.
-- **“Following upstream means there are no external dependencies.”** The MetaModule protocol is identical, but a module can still bind itself to an Android version, ABI, backend or private tool.
-- **“WebUI is only a settings page.”** It may execute with root and deserves high-privilege review.
-- **“Every module issue requires reflashing the LKM.”** Start with disabling recent modules, safe mode and logs.
-
-If a module has no effect, follow [Common troubleshooting](/en/troubleshoot/common/) layer by layer instead of reporting only its manager card.
+The module list now classifies ordinary Zygisk and Native ZN modules. Those tags are inventory and runtime clues, not proof of the module's final effect.

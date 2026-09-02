@@ -27,7 +27,7 @@ MetaModule and YukiZygisk solve different problems. The former mounts system fil
 
 ## Feature API: upstream versus extensions
 
-YukiSU keeps official KernelSU Feature IDs `0–4` compatible. Only IDs starting at `100` are YukiSU Feature additions:
+The current source registers 11 Features. IDs `0–99` are reserved for KernelSU-compatible numbering; YukiSU-owned additions start at `100`:
 
 | ID | Feature | Source | Purpose |
 | --- | --- | --- | --- |
@@ -35,13 +35,17 @@ YukiSU keeps official KernelSU Feature IDs `0–4` compatible. Only IDs starting
 | 1 | `KERNEL_UMOUNT` | Upstream-compatible | Kernel unmount handling for app environments |
 | 2 | `SULOG` | Upstream-compatible | Log `su` requests and authorization decisions |
 | 3 | `ADB_ROOT` | Upstream-compatible | Root for the supported ADB debug chain |
-| 4 | `SELINUX_HIDE` | Upstream-compatible | Upstream SELinux-state hiding capability |
+| 4 | `SELINUX_HIDE` | Upstream-compatible | Sanitize app-facing SELinux probe results |
+| 5 | `WEBVIEW_ZYGOTE_UMOUNT` | KernelSU-reserved range | Remove module mounts before WebView sandboxes inherit them |
 | 100 | `ENHANCED_SECURITY` | YukiSU | Restrict elevation outside YukiSU and unauthorized UID downgrade |
 | 101 | `MAGISK_COMPAT` | YukiSU | Magisk-style authorization prompt for apps not pre-authorized |
 | 102 | `DEFAULT_NO_NEW_PRIVS` | YukiSU | Apply `no_new_privs` to the default root profile |
 | 103 | `YUKIZYGISK` | YukiSU | Control the built-in YukiZygisk capability |
+| 104 | `HIDE_BOOTLOADER` | YukiSU | Rewrite visible unlock/Verified Boot properties after Android boot completes |
 
-SuperKey, dynamic managers and UTS View are also YukiSU project capabilities, but they are not members of this `100–103` Feature-ID range.
+As of 2026-09-02, official KernelSU `main` `e38512f1` enumerates `0–4` in `feature.rs`. YukiSU places WebView Zygote unmount at ID 5 in the upstream-reserved range and groups it with KernelSU Features in the manager; it should not be described as currently identical on both sides. SuperKey, dynamic managers and UTS View have separate interfaces and are not Feature IDs.
+
+All kernel-backed switches are now grouped under Settings → Feature controls, separated into KernelSU and YukiSU sections. The manager changes runtime state through `ksud feature set`, persists it with `feature save`, and rolls back when persistence or required ADB/Magisk follow-up work fails.
 
 ## Kernel root and authorization
 
@@ -65,7 +69,7 @@ This allows narrower grants and policies for unprivileged apps. An incorrect ide
 
 ## LKM and TSR
 
-YukiSU runs only as `kernelsu.ko`; there is no built-in mode. TSR is simply the documentation and UI abbreviation for **Tracepoint Syscall Redirect**. The actual hook implementation is identical to official KernelSU LKM, not a YukiSU-private design.
+YukiSU runs only as `kernelsu.ko`; there is no built-in mode. TSR is the documentation and UI abbreviation for **Tracepoint Syscall Redirect**, following the same tracepoint syscall-redirect model as current official KernelSU LKM. YukiSU still carries its own ports and extensions, so the two modules are not interchangeable identical binaries; TSR is not a second exclusive hook design either.
 
 The runtime requirements are explicit:
 
@@ -74,7 +78,7 @@ The runtime requirements are explicit:
 - the LKM must match KMI, symbol versions and module configuration;
 - hook health should be judged from both manager status and kernel logs.
 
-`CONFIG_KSU_KRETPROBES_SUCOMPAT` controls an experimental kretprobe sucompat path. It is not a default capability of every build. Include feature switches and the actual build configuration in a bug report.
+`CONFIG_KSU_KRETPROBES_SUCOMPAT` remains declared in the current `Kconfig`, but no implementation source reads it to select another sucompat path. Do not describe enabling this inert option as activating an experimental hook. Still include the actual kernel configuration in a report.
 
 ## Userspace
 
@@ -94,7 +98,7 @@ Acts as the manager backend and module runtime. Its responsibilities include:
 - sessions for image patching, LKM installation and Ramdisk Editor;
 - configuration, SELinux handling and diagnostics.
 
-The `ksud` embedded in the manager APK and the version already installed on the device are separate states. Updating the APK alone does not prove that device userspace has been synchronized.
+The APK-embedded `ksud` and `/data/adb/ksud` are separate files. The home page compares their actual ELF content: it can synchronize manually, or the off-by-default auto-update setting can do so at app cold start. Runtime replacement of the installed file raises an integrity warning. None of these actions updates the LKM or boot image.
 
 ### `su`
 
@@ -138,13 +142,13 @@ The manager provides:
 - discovered modules and their enabled state;
 - injection, Zygote and module counts;
 - persistent diagnostic export across reboots;
-- safe-mode status after consecutive Zygote crashes.
+- injection-safe-mode status after three PID replacements for the same Zygote name.
 
 YukiZygisk neither authorizes ordinary `su` requests nor performs MetaModule mounts. Root and ordinary modules should continue independently when it is disabled. Read [YukiZygisk introduction](/en/yukizygisk/intro/) and [Module compatibility](/en/yukizygisk/modules/).
 
-## Upstream-compatible Features (IDs 0–4)
+## KernelSU-numbered Features (IDs 0–5)
 
-These are official KernelSU Features kept compatible by YukiSU, not YukiSU-exclusive capabilities.
+Current official KernelSU `main` exposes IDs `0–4`. YukiSU keeps those five compatible and implements WebView Zygote unmount at reserved-range ID `5`. The manager groups IDs 0–5 together, but that does not make ID 5 a capability currently shared by both projects.
 
 ### sucompat
 
@@ -166,7 +170,11 @@ Raises the capabilities of the supported ADB debugging chain. This expands what 
 
 Keeps the upstream SELinux-state hiding behavior. It is not the same as disabling SELinux and is not a guarantee of passing integrity checks. Preserve enforcing state and logs when debugging policy instead of globally switching to permissive.
 
-## YukiSU Features (IDs 100–103)
+### WebView Zygote unmount (5)
+
+This is an explicit compatibility/isolation tradeoff. While global Kernel Umount remains enabled, it removes module mounts before the UID 1053 WebView Zygote produces sandbox children, reducing mount state inherited by those processes. Disabling the global mechanism prevents this unmount too. Modules that replace WebView resources may stop working, and a reboot is required for the setting to be reflected consistently in newly created processes.
+
+## YukiSU Features (IDs 100–104)
 
 ### Enhanced Security (100)
 
@@ -178,11 +186,15 @@ Provides a Magisk-style authorization prompt when an app that is not already all
 
 ### Default `no_new_privs` (102)
 
-Applies `no_new_privs` to the default root profile, preventing further privilege expansion during later execution. Apps with specialized elevation chains may require a separate profile.
+Applies YukiSU's no-new-privs flag to the default root profile, blocking that thread and descendants from escalating through YukiSU again. It is not general Linux `PR_SET_NO_NEW_PRIVS`; tools that require another YukiSU escalation need a separate profile.
 
 ### YukiZygisk (103)
 
 Controls built-in YukiZygisk. It affects Zygote injection and Zygisk modules, not the base root switch.
+
+### Unlock-state hiding (104)
+
+After Android boot completes, `ksud` uses its built-in resetprop implementation to rewrite visible bootloader, Verified Boot, build-type and ADB-security properties. It is off by default and enabling it requires a reboot. It does not relock the bootloader or guarantee integrity/root-check results. Disabling the switch cannot instantly restore read-only properties already rewritten during the current boot; judge the next boot state.
 
 ## Other YukiSU extensions
 
@@ -190,7 +202,7 @@ Controls built-in YukiZygisk. It affects Zygote injection and Zygisk modules, no
 
 Adjusts system identity presented through a UTS namespace, including views related to `uname`. It changes a view; it does not replace the running kernel.
 
-SuperKey and dynamic managers are authentication extensions, while UTS View is a namespace-view capability. They have their own interfaces and do not occupy the `100–103` Feature IDs.
+SuperKey and dynamic managers are authentication extensions, while UTS View is a namespace-view capability. They have their own interfaces and do not occupy the `100–104` Feature IDs.
 
 ## Manager tools
 
@@ -199,6 +211,8 @@ YukiSU Manager also combines device maintenance features:
 - patch a selected boot image;
 - direct install to the current slot;
 - install to an inactive slot after OTA;
+- choose between traditional Ramdisk and direct-kernel ImgPatch layouts;
+- probe a range-readable HTTPS OTA/factory ZIP or `payload.bin` and extract only a selected boot partition;
 - select a local LKM or bundled KMI resource;
 - inspect, back up and flash partitions;
 - run supported AnyKernel3 packages;
@@ -212,8 +226,14 @@ Having these tools in one manager does not make every action low risk. Operation
 - Root, authorization and ordinary modules do not require YukiZygisk.
 - Without MetaModule, script-only modules may work, but system files are not mounted automatically.
 - Installing the manager does not install the LKM.
-- Updating the manager does not automatically synchronize installed `ksud`.
+- Updating the manager does not update the LKM or boot image; check the home-page integrity state to see whether `ksud` was synchronized.
 - A root grant is not the same thing as a well-designed App Profile.
 - An implemented feature is not automatically safe or supported on every device.
 
 For an upstream comparison, continue with [YukiSU vs KernelSU](/en/guide/yukisu-vs-kernelsu/).
+
+## Feature sources of truth
+
+- [YukiSU Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/main/uapi/feature.h)
+- [YukiSU `ksud` Feature registry and persistence](https://github.com/Rouyashiki/YukiSU/blob/main/userspace/ksud/src/core/feature.cpp)
+- [Official KernelSU `e38512f1` Feature enumeration](https://github.com/tiann/KernelSU/blob/e38512f1255ea454d34cc2008d2ef7932547fad6/userspace/ksud/src/feature.rs)

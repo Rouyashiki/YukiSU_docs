@@ -5,7 +5,7 @@ config:
   - type: doc-hero
     hero:
       name: YukiSU
-      text: 为 GKI 设备打造的现代 Root 方案
+      text: 为 Android 12+ ARM64 GKI 设备打造的现代 Root 方案
       tagline: 上游生态照常用，新的东西也不缺
       image:
         src: /YukiSU-mini.svg
@@ -15,11 +15,8 @@ config:
           text: 快速开始 →
           link: /guide/get-started/
         - theme: alt
-          text: 与 KernelSU 对比 →
-          link: /guide/yukisu-vs-kernelsu/
-        - theme: alt
           text: 在 GitHub 上查看 →
-          link: https://github.com/Anatdx/YukiSU
+          link: https://github.com/Rouyashiki/YukiSU
   - type: features
     features:
       - title: 内核级 Root 能力
@@ -28,7 +25,7 @@ config:
         link: /guide/intro/
       - title: 清晰的技术路线
         icon: 🧭
-        details: 只做 ARM64 GKI 2.0 与 LKM。范围不大，但每一层都知道自己在做什么。
+        details: 只做 Android 12+、ARM64 GKI 2.0 与 LKM；当前发布构建覆盖 5.10 到 6.18 的八组 KMI。
         link: /guide/yukisu-vs-kernelsu/
       - title: 现代 C++ 用户空间
         icon: ⚙️
@@ -36,7 +33,7 @@ config:
         link: /guide/features/
       - title: 灵活模块挂载
         icon: 🧩
-        details: MetaModule 完全跟随上游。原来能用的继续用，挂载后端也可以自己选。
+        details: MetaModule 跟随上游公开契约，挂载后端可以自己选；现有模块仍需核对设备、版本与后端要求。
         link: /modules/meta-module/
       - title: 安全认证
         icon: 🔐
@@ -44,11 +41,11 @@ config:
         link: /manager/superkey/
       - title: 完整管理体验
         icon: 🛠️
-        details: 授权、模块、LKM 安装、分区备份和 Ramdisk 工具，一个管理器里都能找到。
+        details: 授权、Feature、镜像修补/恢复、模块、Lua 插件、分区备份和 Ramdisk 工具都在管理器里。
         link: /manager/overview/
       - title: YukiZygisk 加持
         icon: 🧬
-        details: 要用 Zygisk 模块时直接开，不用再装 Magisk 或 Zygisk Next；不用时也不影响 Root。
+        details: 普通 Zygisk 模块与 Native ZN 目标分开加载、分开报告；不用时也不影响核心 Root。
         link: /yukizygisk/intro/
       - title: 越狱模式
         icon: 🚀

@@ -9,12 +9,12 @@ export default defineUserConfig({
     '/': {
       title: 'YukiSU',
       lang: 'zh-CN',
-      description: 'YukiSU - 面向 GKI 2.0 ARM64 设备的 LKM Root 方案',
+      description: 'YukiSU - 面向 Android 12+ ARM64 GKI 2.0 设备的 LKM Root 方案',
     },
     '/en/': {
       title: 'YukiSU',
       lang: 'en-US',
-      description: 'YukiSU - Kernel-based Android Root Solution',
+      description: 'YukiSU - LKM root for Android 12+ ARM64 GKI 2.0 devices',
     },
   },
 
@@ -41,7 +41,7 @@ export default defineUserConfig({
   theme: plumeTheme({
     hostname: 'https://yukisu.anatdx.com',
 
-    docsRepo: 'Anatdx/YukiSU',
+    docsRepo: 'Rouyashiki/YukiSU_docs',
     docsDir: 'docs',
     docsBranch: 'main',
 

@@ -37,6 +37,8 @@ metamodule=1
 
 同一时间只能有一个。两个挂载后端同时接管同一批模块，不会变成双倍性能，只会互相覆盖。
 
+MetaModule 仍是 `/data/adb/modules/` 下的模块，因此普通模块状态也适用于它：`disable` 会让后端脚本停止运行，`remove` 在后续启动阶段真正清理。它不是核心 Root 组件；MetaModule 不可用时，Root 与不依赖挂载的脚本/插件仍可能正常。
+
 ## 接口脚本
 
 | 文件 | 调用时机 | 提供的上下文 | 目的 |
@@ -45,23 +47,27 @@ metamodule=1
 | `post-fs-data.sh` | MetaModule 自身的早期启动阶段 | MetaModule 环境 | 在普通模块脚本前准备后端 |
 | `metamount.sh` | 普通模块 `post-fs-data` 和属性加载后 | `MODULE_DIR` | 扫描模块并建立挂载 |
 | `metauninstall.sh` | 卸载普通模块时 | `MODULE_ID` | 清理该模块的后端状态 |
-| `service.sh` 等阶段脚本 | 对应 YukiSU 生命周期 | MetaModule 环境 | 执行后端需要的常规阶段任务 |
+| `post-mount.sh`、`service.sh`、`boot-completed.sh` 等 | 对应 YukiSU 生命周期 | MetaModule 环境 | 在普通模块和 Lua 插件之前执行后端的同阶段任务 |
 
 哪个脚本不存在，就跳过哪个接口。后端已经禁用、待卸载或更新到一半时，YukiSU 也不会假装它仍然正常。
 
 ## 启动时发生什么
 
-在正常启动中，挂载相关顺序大致为：
+在正常启动中，挂载相关顺序为：
 
-1. YukiSU 处理待更新、待卸载状态和目录上下文；
-2. 加载普通模块的 SELinux 规则；
+1. 公共 `post-fs-data.d` 脚本先执行；
+2. YukiSU 应用待更新/待卸载状态、目录上下文、SELinux 规则与持久功能配置；
 3. 执行 MetaModule 的 `post-fs-data.sh`；
 4. 执行普通模块的 `post-fs-data.sh`；
-5. 加载模块 `system.prop`；
-6. 调用活动 MetaModule 的 `metamount.sh`；
-7. 进入 `post-mount` 阶段。
+5. 执行 Lua 插件的 `post_fs_data` 回调；
+6. 加载模块 `system.prop`；
+7. 调用活动 MetaModule 的 `metamount.sh`；
+8. 应用按应用卸载配置；
+9. 进入 `post-mount`，再按公共脚本、MetaModule、普通模块、Lua 插件的顺序派发。
 
 `metamount.sh` 在普通模块早期脚本之后执行，让模块先把要挂的文件准备好。代码必须等挂载完成，就放到 `post-mount` 或更后面；别在 `post-fs-data.sh` 里假设目标路径已经换好了。
+
+late-load 模式使用 `late-load.sh` 代替已经错过的 early-boot 阶段，再加载属性并调用 `metamount.sh`。这只是延迟加载路径，不能让需要 init 早期或已启动进程的挂载获得与正常开机相同的时机。
 
 ## 安装普通模块时
 
@@ -91,6 +97,8 @@ MetaModule 如果带 `metainstall.sh`，安装普通模块时也会调用它。�
 
 当前后端还显示待更新、待卸载或禁用时，先重启让它把事情做完。管理器会拦住一部分后端重叠操作，但不要故意和检查机制斗智斗勇。
 
+这项安装拦截只在活动 MetaModule 带 `metainstall.sh` 时保护其自定义安装流程；不能把“管理器允许安装”理解成当前后端已经挂载正常。
+
 ## 卸载的影响
 
 卸载 MetaModule 后，普通模块目录和脚本可能还在，但它们的 `system/` 文件不会继续出现在系统路径。所有依赖挂载的模块都会一起受影响。
@@ -115,6 +123,8 @@ MetaModule 如果带 `metainstall.sh`，安装普通模块时也会调用它。�
 
 shell 里看得到、某个应用里看不到，先查那个应用的 namespace 和模块卸载策略。后端真坏了，通常不会只挑一个应用失明。
 
+若开启“为 WebView 卸载模块”，WebView Zygote 会在自己的命名空间中移除普通模块挂载；修改 WebView 资源的模块可能因此按设计不可见。这属于内核按应用卸载策略，不是 MetaModule 安装失败。详见[模块挂载](/modules/magic-mount/)。
+
 ## MetaModule 不会自动承诺这些功能
 
 YukiSU 不保证某个 MetaModule 一定具备：
@@ -127,5 +137,7 @@ YukiSU 不保证某个 MetaModule 一定具备：
 - 设备无法启动时的 Recovery 安装支持。
 
 这些都要看具体后端。MetaModule 会以 Root 处理多个模块的文件和脚本，信任级别非常高；来源、源码、更新记录和卸载方法至少得有一样能让你放心，最好全部都有。
+
+MetaModule 也不处理 `/data/adb/plugins/` 下的 Lua 插件，不负责加载 `zygisk/*.so` 或解释 `zn_modules.txt`。这些路径分别属于 `ksud` 插件运行时与 YukiZygisk。
 
 继续阅读[模块系统](/modules/overview/)了解普通模块，或在挂载失败时前往[常见问题排查](/troubleshoot/common/)。

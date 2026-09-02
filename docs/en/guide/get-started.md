@@ -18,10 +18,11 @@ Keep stock images from the exact current firmware and verify that bootloader/fas
 Current support is limited to:
 
 - ARM64;
+- Android 12 (API 31) or newer;
 - GKI 2.0;
 - Linux 5.10 or newer;
 - LKM, `CONFIG_KSU=m`;
-- the required Kprobes, Kretprobes and syscall tracepoints.
+- loadable-module support plus the required Kprobes, Kretprobes and syscall tracepoints.
 
 Also identify:
 
@@ -34,14 +35,17 @@ Also identify:
 
 “Linux 6.1” alone is not a compatibility check. KMI, symbols, configuration and vendor changes can all differ.
 
+Current standard builds cover eight KMI targets from Android 12/5.10 through Android 17/6.18, but Android releases and kernel generations are not one-to-one. Read the complete [Compatibility](/en/guide/compatibility/) matrix and select from the target kernel or `boot` image.
+
 ## 1. Download the files
 
-Get the official manager from [YukiSU Releases](https://github.com/Anatdx/YukiSU/releases/latest). Avoid mirrored drives, chat attachments and similarly named repositories.
+Get the official manager from [YukiSU Releases](https://github.com/Rouyashiki/YukiSU/releases/latest). Avoid mirrored drives, chat attachments and similarly named repositories.
 
-You need:
+The official full Manager APK embeds all eight current standard-KMI LKMs. Normally prepare:
 
 - **YukiSU Manager APK** for installation, grants, modules and diagnostics;
-- **a YukiSU LKM matching the device KMI**, the `kernelsu.ko` that enters the kernel.
+- **stock boot images from the exact current firmware** for first install and recovery;
+- **a separate matching LKM when needed**, only when no embedded target matches or the device requires a dedicated build.
 
 Use a bundled matching resource when available. Otherwise build against the device kernel as described in [Kernel integration](/en/dev/integration/). Disabling version checks is not a substitute for a matching module.
 
@@ -52,9 +56,12 @@ Use a bundled matching resource when available. Otherwise build against the devi
 | Direct install | The current environment already has root; update the active slot |
 | Install to inactive slot | An A/B OTA has finished but the device has not rebooted into it |
 | Patch an image | First installation or generating an output for manual flashing |
+| Download an image | An HTTPS URL exposes a range-readable OTA/factory ZIP or `payload.bin`, and only one boot partition should be extracted |
 | Local `.ko` | A device-specific or self-built LKM |
 
 On a first install, YukiSU does not yet provide root, so you normally patch a stock image from the current firmware and flash it using the device's documented method. If another root solution is already active, read the relevant migration page first.
+
+Each entry still chooses between traditional Ramdisk and direct-kernel ImgPatch layouts. They have different partitions, input constraints and restore paths. ImgPatch accepts only a `boot` image containing an ARM64 kernel, while the remote-image entry currently uses the traditional path. Read [Installation and image modes](/en/guide/install-modes/) before enabling “Embed LKM directly into boot kernel”.
 
 There is no universal fastboot command for every phone. If there were, vendors would not have made `boot`, `init_boot`, vendor layouts and A/B slots this entertaining.
 
@@ -64,9 +71,10 @@ Confirm that:
 
 1. the input image belongs to the **current firmware**;
 2. LKM KMI matches the target kernel;
-3. partition and slot are correct;
-4. output image and logs will be kept;
-5. stock recovery is ready.
+3. Ramdisk or ImgPatch was selected deliberately and the input fits that mode;
+4. partition and slot are correct;
+5. output image and logs will be kept;
+6. stock recovery is ready.
 
 If manager detection and device-maintainer documentation disagree, stop and investigate. Many bad flashes come from giving a perfectly working tool the wrong target with great confidence.
 
@@ -101,17 +109,18 @@ After boot:
 
 1. Home recognizes YukiSU and shows the expected LKM version.
 2. Manager authentication succeeded.
-3. Embedded and installed `ksud` versions are not obviously mismatched.
-4. One trusted test app can open and close an authorized `su` session.
-5. The same state survives one more reboot.
+3. The reported Ramdisk / ImgPatch / late-load mode matches the intended layout.
+4. The actual integrity state of embedded `ksud` and `/data/adb/ksud` matches; synchronize manually if needed, because auto-sync is off by default.
+5. One trusted test app can open and close an authorized `su` session.
+6. The same state survives one more reboot.
 
 This proves the LKM → `ksud` → manager → app-grant path.
 
 ## 7. Add modules and YukiZygisk afterwards
 
-1. Keep the existing MetaModule or install one that fits the device.
-2. Reboot and confirm mounting works.
-3. Add ordinary modules.
+1. Keep or install a suitable MetaModule only when a module needs files mounted under paths such as `system/`.
+2. When a MetaModule is needed, reboot and confirm its mount backend first.
+3. Then add ordinary modules.
 4. Enable YukiZygisk only if Zygisk modules are needed.
 5. Enable injection modules one at a time, or at least know which recent change to disable first.
 
@@ -120,6 +129,7 @@ This is not asking for a laboratory-grade seven-stage experiment. It simply avoi
 ## Installation is complete when
 
 - YukiSU remains detected after reboot;
+- the manager-reported load mode matches the installed layout;
 - only authorized apps receive root;
 - `ksud`, manager and LKM versions make sense together;
 - MetaModule mounts files required by modules;
@@ -128,6 +138,8 @@ This is not asking for a laboratory-grade seven-stage experiment. It simply avoi
 ## Next
 
 - [Feature overview](/en/guide/features/)
+- [Compatibility](/en/guide/compatibility/)
+- [Installation and image modes](/en/guide/install-modes/)
 - [App Profile](/en/manager/app-profile/)
 - [Jailbreak mode](/en/guide/jailbreak-mode/)
 - [Switch from KernelSU](/en/guide/switch/kernelsu/)

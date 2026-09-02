@@ -7,21 +7,33 @@ title: 如何有效提问
 
 “不能用”“已加载但没效果”“求适配”都没法定位问题。想让别人少猜一点，请把下面这些一次给全：
 
-- 设备型号、Android 版本、完整 `uname -r`；
-- 当前槽位、修改的分区、LKM KMI；
-- 管理器、LKM、内置/已安装 `ksud` 的完整版本；
+- 设备型号、Android 版本、构建指纹、完整 `uname -r`；
+- 当前槽位、实际修改的分区、目标 KMI，以及镜像来自哪一版固件；
+- 管理器、LKM、管理器内置/设备已安装 `ksud` 的完整版本；若完整性不匹配导致已安装一侧显示“未知”，就原样记录；
+- 首页显示的 Hook 类型与工作模式（Ramdisk、ImgPatch 或 Jailbreak / late-load）；
 - 从正常启动开始，最短的复现步骤；
 - 你以为会发生什么，实际发生了什么；
-- 管理器日志，以及相关 logcat / kernel 日志；
-- 涉及模块时，再带模块 ID、版本、MetaModule 和 YukiZygisk 诊断。
+- 最后一次成功状态，以及失败前唯一改变的项目；
+- 管理器保存/分享的 bugreport，以及相关安装输出；
+- 涉及模块时，再带模块 ID、版本、MetaModule、YukiZygisk 状态与目标进程。
+
+不同问题还需要不同证据：
+
+| 问题 | 额外附上 |
+| --- | --- |
+| ImgPatch / 镜像修补或恢复 | 输入来源、目标分区/槽位、完整修补输出、是否已有原始镜像备份 |
+| OTA 后安装到非活动槽位 | OTA 是否已完成、切槽前后的槽位、目标槽位镜像与 KMI |
+| 功能开关保存失败 | 开关名、切换前后状态、是否提示回滚或要求重启 |
+| `ksud` 被替换告警 | 首页内置版本、已安装一侧的“未知/不一致”状态、告警时间、此前运行过的 Root 管理器或同步操作 |
+| YukiZygisk / Native 模块 | 模块类型与 ABI、目标名或路径、页面显示“未观察到”还是“注入失败” |
 
 ## 发出去之前
 
-1. 用最新正式版或明确注明的 CI 版再试一次；
+1. 用最新正式版或明确注明提交号的 CI 版再试一次；
 2. 暂停无关模块，把变量缩到最少；
-3. 搜一下 [GitHub Issues](https://github.com/Anatdx/YukiSU/issues)；
-4. 从日志里删掉 SuperKey、账号、个人路径和其他隐私信息。
+3. 搜一下 [GitHub Issues](https://github.com/Rouyashiki/YukiSU/issues)；
+4. 从日志里删掉 SuperKey、账号、个人路径、应用清单和其他不必要的隐私信息。
 
-截图适合说明界面长什么样，文本日志才适合搜索和定位。最有价值的通常不是最后一百行重复报错，而是**第一条**真正失败的地方。
+截图适合说明界面状态，文本日志才适合搜索和定位。管理器生成的 bugreport 会收集系统属性、进程、包、挂载、内核和 YukiZygisk 等诊断；分享前应先检查内容。最有价值的通常不是最后一百行重复报错，而是**第一条**真正失败的地方。
 
-反馈渠道：[GitHub Issues](https://github.com/Anatdx/YukiSU/issues) · [Telegram](https://t.me/manosaba)
+反馈渠道：[GitHub Issues](https://github.com/Rouyashiki/YukiSU/issues) · [Telegram](https://t.me/manosaba)

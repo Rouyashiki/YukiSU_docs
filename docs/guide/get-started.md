@@ -18,10 +18,11 @@ title: 快速开始
 YukiSU 目前只支持下面这类设备：
 
 - ARM64；
+- Android 12（API 31）及以上；
 - GKI 2.0；
 - Linux 5.10 及以上；
 - LKM 模式，也就是 `CONFIG_KSU=m`；
-- 内核带有项目需要的 Kprobes、Kretprobes 和 syscall tracepoints。
+- 内核能加载模块，并带有项目需要的 Kprobes、Kretprobes 和 syscall tracepoints。
 
 还要确认四件容易刷错的事：
 
@@ -34,14 +35,17 @@ YukiSU 目前只支持下面这类设备：
 
 只看到 `5.10`、`6.1` 之类的主版本远远不够。同一内核版本可以有不同 KMI、符号和厂商修改，别拿名字看起来差不多的 `.ko` 碰运气。
 
+当前标准构建覆盖 Android 12/5.10 到 Android 17/6.18 的 8 个 KMI 目标，但系统版本和内核世代不是一一对应。先看[兼容范围](/guide/compatibility/)里的完整表，再按目标内核或 `boot` 镜像选择。
+
 ## 1. 下载需要的文件
 
-从 [YukiSU Releases](https://github.com/Anatdx/YukiSU/releases/latest) 下载官方管理器。群文件、网盘转载和名字很像的仓库，能不碰就不碰。
+从 [YukiSU Releases](https://github.com/Rouyashiki/YukiSU/releases/latest) 下载官方管理器。群文件、网盘转载和名字很像的仓库，能不碰就不碰。
 
-你需要：
+正式的全量 Manager APK 已内置当前 8 个标准 KMI LKM。通常先准备：
 
 - **YukiSU Manager APK**：用来安装、授权、管理模块和看诊断；
-- **匹配 KMI 的 YukiSU LKM**：也就是最终要加载进内核的 `kernelsu.ko`。
+- **当前固件的原厂启动镜像**：首次安装与恢复都要用；
+- **单独的匹配 KMI LKM（按需）**：只有内置资源没有目标、或设备必须使用专用构建时才需要手选 `.ko`。
 
 管理器内置资源里有匹配项就直接用。没有的话，为设备内核自行构建，具体见[内核集成](/dev/integration/)。“关掉版本检查再试试”不是解决方案。
 
@@ -54,9 +58,12 @@ YukiSU 目前只支持下面这类设备：
 | 直接安装 | 设备当前已经有 Root，要更新当前槽位 |
 | 安装到未使用槽位 | A/B 设备刚做完 OTA，还没切到新槽位 |
 | 选择镜像修补 | 第一次安装，或者想先生成镜像再手动刷入 |
+| 下载镜像 | HTTPS 地址指向可 Range 读取的 OTA/factory ZIP 或 `payload.bin`，希望只提取一个启动分区 |
 | 选择本地 `.ko` | 使用设备专用或自己编译的 LKM |
 
-第一次安装时，YukiSU 自己还没提供 Root，所以通常是拿当前固件的原厂镜像去修补，再按设备自己的方式刷入。如果你现在已经在用 Magisk、KernelSU 或其他 Root，可以从现有 Root 环境直接安装，但先看对应的[切换说明](/guide/switch/kernelsu/)。
+第一次安装时，YukiSU 自己还没提供 Root，所以通常是拿当前固件的原厂镜像去修补，再按设备自己的方式刷入。如果你现在已经在用 Magisk、KernelSU 或其他 Root，可以从现有 Root 环境直接安装，但先看对应的切换说明。
+
+每个入口还可以走传统 Ramdisk 或 ImgPatch 内核直嵌布局；两者改的分区、输入限制与恢复方式不同。ImgPatch 只能修补含 ARM64 kernel 的 `boot`，远程镜像入口当前只走传统模式。先读[安装与镜像模式](/guide/install-modes/)，再决定是否打开“将 LKM 直接嵌入 boot 内核”。
 
 这里不会给一条“所有手机通吃”的 fastboot 命令。真要是存在这种命令，厂商们也不会把 `boot`、`init_boot` 和 A/B 槽位玩出这么多花样。
 
@@ -66,9 +73,10 @@ YukiSU 目前只支持下面这类设备：
 
 1. 输入镜像确实来自**当前固件**；
 2. LKM 的 KMI 与目标内核一致；
-3. 准备写入的分区和槽位没有选反；
-4. 输出镜像与日志已经保存；
-5. 出问题后有办法刷回原厂镜像。
+3. 选择的是 Ramdisk 还是 ImgPatch，而且输入分区符合该模式；
+4. 准备写入的分区和槽位没有选反；
+5. 输出镜像与日志已经保存；
+6. 出问题后有办法刷回原厂镜像。
 
 管理器检测结果如果和设备维护者的文档对不上，先停。很多砖不是工具写坏的，而是用户非常自信地给了它一个错误目标。
 
@@ -103,9 +111,10 @@ SuperKey 只认证管理器，不是应用 Root 密码，更不是越复杂越�
 
 1. 首页能识别 YukiSU，LKM 版本符合预期；
 2. 管理器已经通过签名或你选择的方式完成认证；
-3. 内置 `ksud` 与设备中安装的 `ksud` 没有明显错配；
-4. 给一个可信测试应用授权，确认 `su` 能正常进入和退出；
-5. 再重启一次，确认这些状态没有丢。
+3. 首页报告的 Ramdisk / ImgPatch / late-load 运行方式符合预期；
+4. 内置 `ksud` 与 `/data/adb/ksud` 的实际完整性状态匹配；需要时从主页手动同步，自动同步默认关闭；
+5. 给一个可信测试应用授权，确认 `su` 能正常进入和退出；
+6. 再重启一次，确认这些状态没有丢。
 
 到这里，才算证明“LKM、`ksud`、管理器、应用授权”这条主链是通的。
 
@@ -113,9 +122,9 @@ SuperKey 只认证管理器，不是应用 Root 密码，更不是越复杂越�
 
 建议顺序：
 
-1. 保留已有或安装一个适合设备的 MetaModule；
-2. 重启，确认挂载后端正常；
-3. 加入日常使用的普通模块；
+1. 如果模块要把文件挂到 `system/` 等路径，才保留或安装一个适合设备的 MetaModule；
+2. 需要 MetaModule 时先重启，确认挂载后端正常；
+3. 再加入日常使用的普通模块；
 4. 需要 Zygisk 模块时再开启 YukiZygisk；
 5. Zygisk 模块逐个启用，至少知道出事时该先关谁。
 
@@ -124,6 +133,7 @@ SuperKey 只认证管理器，不是应用 Root 密码，更不是越复杂越�
 ## 怎样算安装完成
 
 - 重启后管理器仍能识别 LKM；
+- 管理器显示的运行方式与实际安装布局一致；
 - 只有你授权的应用能拿 Root；
 - `ksud` 与管理器/LKM 版本正常；
 - MetaModule 能把需要的模块文件挂出来；
@@ -132,6 +142,8 @@ SuperKey 只认证管理器，不是应用 Root 密码，更不是越复杂越�
 ## 接下来
 
 - 想知道每个开关做什么：[功能概览](/guide/features/)
+- 想核对完整 Android/KMI 边界：[兼容范围](/guide/compatibility/)
+- 想理解 Ramdisk、ImgPatch 与远程镜像：[安装与镜像模式](/guide/install-modes/)
 - 准备配置应用权限：[App Profile](/manager/app-profile/)
 - 想临时加载、不写启动镜像：[越狱模式](/guide/jailbreak-mode/)
 - 从 KernelSU 迁移：[从 KernelSU 切换](/guide/switch/kernelsu/)

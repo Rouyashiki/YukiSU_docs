@@ -9,7 +9,7 @@ export default defineThemeConfig({
   appearance: true,
 
   social: [
-    { icon: 'github', link: 'https://github.com/Anatdx/YukiSU' },
+    { icon: 'github', link: 'https://github.com/Rouyashiki/YukiSU' },
   ],
   navbarSocialInclude: ['github'],
 
@@ -34,7 +34,7 @@ export default defineThemeConfig({
       profile: {
         avatar: '/YukiSU-mini.svg',
         name: 'YukiSU',
-        description: '面向 GKI 2.0 ARM64 设备的 LKM Root 方案',
+        description: '面向 Android 12+ ARM64 GKI 2.0 设备的 LKM Root 方案',
       },
 
       navbar: zhNavbar,
@@ -50,7 +50,7 @@ export default defineThemeConfig({
       profile: {
         avatar: '/YukiSU-mini.svg',
         name: 'YukiSU',
-        description: 'Kernel-based Android Root Solution',
+        description: 'LKM root for Android 12+ ARM64 GKI 2.0 devices',
       },
 
       navbar: enNavbar,

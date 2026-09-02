@@ -37,6 +37,8 @@ metamodule=1
 
 Only one MetaModule may be active. This avoids two backends processing the same module trees and creating duplicate or conflicting mounts.
 
+A MetaModule is still a module under `/data/adb/modules/`, so ordinary state markers apply to it. `disable` stops backend scripts and `remove` performs final cleanup in a later boot stage. It is not part of the core root path: root and scripts/plugins that need no mounts can remain functional without it.
+
 ## Interface scripts
 
 | File | Invocation | Context | Purpose |
@@ -45,23 +47,27 @@ Only one MetaModule may be active. This avoids two backends processing the same 
 | `post-fs-data.sh` | MetaModule early boot | MetaModule environment | Prepare the backend before ordinary-module scripts |
 | `metamount.sh` | After ordinary `post-fs-data` and property loading | `MODULE_DIR` | Scan modules and create mounts |
 | `metauninstall.sh` | Removing an ordinary module | `MODULE_ID` | Clean backend state for that module |
-| `service.sh` and other stage scripts | Matching YukiSU lifecycle stages | MetaModule environment | Normal backend lifecycle work |
+| `post-mount.sh`, `service.sh`, `boot-completed.sh`, and other stages | Matching YukiSU lifecycle stages | MetaModule environment | Run backend work before ordinary modules and Lua plugins in that stage |
 
 If a script is absent, that hook is skipped. A disabled, pending-removal or otherwise unsafe MetaModule should not be treated as a normal active backend.
 
 ## What happens during boot
 
-The normal mount-related order is broadly:
+The normal mount-related order is:
 
-1. process pending updates/removals and directory contexts;
-2. load ordinary-module SELinux rules;
+1. run common `post-fs-data.d` scripts;
+2. apply pending update/removal state, directory contexts, SELinux rules and persisted features;
 3. run the MetaModule `post-fs-data.sh`;
-4. run ordinary-module `post-fs-data.sh`;
-5. load module `system.prop` files;
-6. call the active MetaModule `metamount.sh`;
-7. enter `post-mount`.
+4. run ordinary-module `post-fs-data.sh` files;
+5. run Lua plugin `post_fs_data` callbacks;
+6. load module `system.prop` files;
+7. call the active MetaModule `metamount.sh`;
+8. apply per-app unmount configuration;
+9. enter `post-mount`, ordered as common scripts, MetaModule, ordinary modules, then Lua plugins.
 
 `metamount.sh` runs after ordinary early scripts so modules can prepare required files first. Work that requires final mounted paths belongs in `post-mount` or later, not in an ordinary `post-fs-data.sh` that assumes replacement paths already exist.
+
+Late-load mode uses `late-load.sh` after real early boot has already passed, then loads properties and invokes `metamount.sh`. It is a delayed-loading path and cannot give init-early or already-running consumers the same timing as a normal boot.
 
 ## During ordinary-module installation
 
@@ -91,6 +97,8 @@ Do not treat a backend replacement like an ordinary module update. Use this sequ
 
 If the current MetaModule is pending update/removal or disabled, let that state complete across one reboot. YukiSU install safety checks reject some operations that would overlap backends.
 
+That installation gate protects a custom `metainstall.sh` only when the active backend provides one. An allowed installation is not proof that the backend currently mounts correctly.
+
 ## Effect of removal
 
 Removing the active MetaModule affects every ordinary module that depends on system-file mounting. Module directories and scripts can remain while their `/system` trees no longer appear as before.
@@ -113,6 +121,8 @@ Do not stop at “installed.” Confirm that:
 
 If a shell sees a mount but one app does not, inspect that app's namespace and module-unmount policy before declaring the entire backend broken.
 
+When “unmount modules for WebView” is enabled, the WebView Zygote loses ordinary module mounts in its namespace. A module that replaces WebView resources may therefore be invisible by design. This is a kernel per-app unmount policy, not a MetaModule installation failure. See [Module mounting](/en/modules/magic-mount/).
+
 ## Capability and trust boundaries
 
 YukiSU does not promise that a particular MetaModule provides:
@@ -125,5 +135,7 @@ YukiSU does not promise that a particular MetaModule provides:
 - recovery-mode installation for an unbootable device.
 
 Those belong to the implementation. A MetaModule processes files and scripts from many modules as root, placing it at a high-trust boundary. Use a backend with a credible source, history, update process and recovery guide.
+
+MetaModule does not process Lua plugins under `/data/adb/plugins/`, load `zygisk/*.so`, or interpret `zn_modules.txt`. Those paths belong to the `ksud` plugin runtime and YukiZygisk respectively.
 
 Continue with [Module system](/en/modules/overview/) for ordinary modules, or [Common troubleshooting](/en/troubleshoot/common/) for mount failures.

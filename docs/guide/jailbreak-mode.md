@@ -15,15 +15,14 @@ title: 越狱模式
 
 ## 什么情况下会出现入口
 
-当前实现要求：
+当前界面只用两项运行状态决定是否显示/启用入口：
 
-- ARM64、GKI 2.0、Linux 5.10+；
 - 当前内核还没有活动的 YukiSU；
-- 管理器里带有匹配当前 KMI 的 `kernelsu.ko`；
-- **SELinux 当前是 Permissive**；
-- 管理器能启动所需服务；自动越狱还要有自启动权限。
+- **SELinux 当前是 Permissive**。
 
-Permissive 是引导 late-load 的前提，不代表正常安装 YukiSU 后也得一直关着 SELinux。如果当前是 Enforcing，管理器不会把越狱模式当成通用替代安装法。
+入口出现只证明这两个 UI 前置条件成立。真正执行成功还要求 Android 12（API 31）及以上的 ARM64 GKI 2.0 / Linux 5.10+ 设备、APK 内存在匹配当前 KMI 的 `kernelsu.ko`，并且现有 Root 或 Magica 引导链与管理器服务可用。自动越狱另需应用自启动权限。
+
+Permissive 是引导 late-load 的前提，不代表正常安装 YukiSU 后也得一直关着 SELinux。如果当前是 Enforcing，管理器不会把越狱模式当成通用替代安装法。完整 APK 当前打包的标准目标从 `android12-5.10` 到 `android17-6.18`；仍应按运行内核 KMI 匹配，见[兼容范围](/guide/compatibility/)。
 
 ## 有 Root 和没 Root，怎么加载
 
@@ -113,7 +112,7 @@ Permissive 会削弱 SELinux 隔离。日常长期使用，正常安装匹配 KM
 
 ### 为什么看不到越狱按钮
 
-确认 YukiSU 是否已经活动、SELinux 是否真的是 Permissive、设备是否在支持范围，以及 APK 里有没有匹配 KMI 的 LKM。
+确认 YukiSU 是否已经活动，以及 SELinux 是否真的是 Permissive。设备范围和匹配 KMI 的 LKM 会在执行阶段决定能否成功，不是按钮显示条件。
 
 ### 提示找不到 LKM
 
@@ -129,6 +128,6 @@ Permissive 会削弱 SELinux 隔离。日常长期使用，正常安装匹配 KM
 
 ## 参考
 
-- [官方 KernelSU late-load 说明](https://github.com/tiann/KernelSU/blob/main/website/docs/guide/module.md#late-load-mode)
+- [官方 KernelSU late-load 说明](https://kernelsu.org/guide/module.html#late-load-mode)
 - [YukiSU 快速开始](/guide/get-started/)
 - [模块系统](/modules/overview/)

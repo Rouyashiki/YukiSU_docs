@@ -51,17 +51,13 @@ The final LKM therefore does not need a directly readable plaintext SuperKey, bu
 
 ## Provisioning the key
 
-At build time, pass:
+The currently supported entry is the manager's LKM patch/install page. After a SuperKey is entered, `ksud` creates a random salt and writes the salt, verifier, and authentication mode into the patchable data block of the LKM used for that operation. Both ramdisk and ImgPatch installation paths handle this data.
 
-```text
-KSU_SUPERKEY="your-secret"
-```
+Only that output or installation is affected; existing images and `.ko` files are not modified retroactively. Rotation therefore also requires a new patch and installation.
 
-Build automation must keep the original key out of command echo, CI parameters, artifact metadata and archived logs.
+`CONFIG_KSU_SUPERKEY=y` compiles SuperKey support into the LKM, and current official build scripts pass it. Do not treat `KSU_SUPERKEY="..."` as a complete compile-time provisioning path in current source: `Kbuild` accepts the macro, but the runtime verifier is actually injected by the `ksud` patch flow.
 
-During patching or installation, enter SuperKey on the manager's LKM page. `ksud` writes the corresponding authentication data into that output only; existing images and `.ko` files are not modified retroactively.
-
-`CONFIG_KSU_SUPERKEY=y` controls kernel support and is enabled in normal current configurations. A visible manager input does not prove that an arbitrary third-party or old LKM supports it; verify the installed state.
+A visible manager input also does not prove that an arbitrary third-party or old LKM contains the patchable block. Verify patch output and the installed authentication state.
 
 ## How authentication works
 
@@ -77,7 +73,7 @@ During patching or installation, enter SuperKey on the manager's LKM page. `ksud
 The kernel rejects future timestamps, requests older than 30 seconds, mismatched or truncated keys, and requests when no SuperKey was configured. A badly wrong device clock can therefore reject a correct key. Authentication state belongs to the running kernel and must be established again after reboot.
 
 ::: warning Failed-attempt protection
-In the current implementation, three consecutive failures terminate the authenticating process; ten total failures trigger a device reboot. Do not treat a real device as an unlimited password-guessing target.
+In the current implementation, three consecutive failures terminate the authenticating process; ten total failures since the current kernel boot trigger a device reboot. Success resets only the consecutive counter, not the total. Do not treat a real device as an unlimited password-guessing target.
 :::
 
 ## Storage and boot authentication
@@ -87,9 +83,12 @@ In the current implementation, three consecutive failures terminate the authenti
 
 Manager-side storage of the original input is separate from the salt and verifier embedded in the LKM.
 
+Whenever a key is already saved, opening Home while the app is not yet authenticated also makes an attempt with it. Enabling the separate boot option starts one non-retrying service after user unlock and `BOOT_COMPLETED`; neither path loops on failure.
+
 ## Choosing and protecting a key
 
 - Use a sufficiently long, random, per-device value.
+- Keep it within 64 UTF-8 bytes. Multibyte characters are easier to truncate differently at input boundaries, so prefer reliably entered ASCII.
 - Never reuse a lock-screen PIN, account password, ADB key passphrase or disk password.
 - Avoid names, device models, project names and predictable phrases.
 - Prefer characters that can be entered reliably on the device keyboard.
