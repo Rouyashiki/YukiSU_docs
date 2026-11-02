@@ -5,137 +5,71 @@ title: MetaModule
 
 # MetaModule
 
-MetaModule is the replaceable mount backend of the YukiSU module system. YukiSU **fully follows official KernelSU's MetaModule interface and lifecycle**: identification, script entries, call order and the one-active-backend rule are identical.
+A MetaModule is an external module-mount backend. Ordinary system-file modules use built-in Kagami by default. Install a MetaModule when the author requires that backend or you want its features.
 
-YukiSU's C++ userspace executes that upstream contract. The MetaModule still decides whether mounting uses OverlayFS, bind mounts or another implementation; there is no separate YukiSU-private MetaModule format.
+## Selection alongside built-in Kagami
 
-::: tip Switching from KernelSU
-A MetaModule already working under official KernelSU can remain installed when moving to YukiSU. Any Android, kernel or version requirement specific to that backend still applies.
-:::
+The mount stage checks for an enabled `metamount.sh` in the active MetaModule:
 
-## Why MetaModule exists
+- Present: execute the external script and skip built-in Kagami mounting;
+- Absent or the backend is disabled: use built-in Kagami. It runs the configured plan when built-in mounting is enabled, and skips it when disabled;
+- External script fails: report the error without automatically retrying built-in mounting in the same call.
 
-Modules that only run scripts, set properties or load SELinux rules may not change system files. When files must appear under read-only system paths, YukiSU delegates these tasks to MetaModule:
+If external mounting fails, read `metamount.sh` output and repair the backend. To return to Kagami, disable or uninstall the external backend, enable built-in mounting and fully reboot. See [Module mounting](/en/modules/magic-mount/).
 
-- collect ordinary-module file trees;
-- resolve directory and file overlays;
-- create the actual mounts;
-- maintain backend state during install and removal;
-- provide implementation-specific rollback and diagnostics.
+## Identification
 
-This allows mount technology to evolve independently. It also makes the active MetaModule a shared dependency of every system-file module; one backend failure can affect several ordinary modules at once.
-
-## Identification and active instance
-
-Set this in `module.prop`:
+A MetaModule declares this in `module.prop`:
 
 ```properties
 metamodule=1
 ```
 
-`true` is also accepted. After installation, YukiSU maintains a link under `/data/adb/metamodule/` to locate the active implementation.
+`true` is also recognized. It remains under `/data/adb/modules/<id>/`, with the active backend addressed through the `/data/adb/metamodule/` symlink. Only one external MetaModule is maintained at a time. `disable`, `remove` and pending updates follow ordinary module handling.
 
-Only one MetaModule may be active. This avoids two backends processing the same module trees and creating duplicate or conflicting mounts.
-
-A MetaModule is still a module under `/data/adb/modules/`, so ordinary state markers apply to it. `disable` stops backend scripts and `remove` performs final cleanup in a later boot stage. It is not part of the core root path: root and scripts/plugins that need no mounts can remain functional without it.
+YukiSU implements the KernelSU-style interfaces listed below. Before installing, follow the backend's Android, kernel-version and migration requirements.
 
 ## Interface scripts
 
-| File | Invocation | Context | Purpose |
-| --- | --- | --- | --- |
-| `metainstall.sh` | Installing an ordinary module | Ordinary-module install environment | Backend-specific install and preprocessing |
-| `post-fs-data.sh` | MetaModule early boot | MetaModule environment | Prepare the backend before ordinary-module scripts |
-| `metamount.sh` | After ordinary `post-fs-data` and property loading | `MODULE_DIR` | Scan modules and create mounts |
-| `metauninstall.sh` | Removing an ordinary module | `MODULE_ID` | Clean backend state for that module |
-| `post-mount.sh`, `service.sh`, `boot-completed.sh`, and other stages | Matching YukiSU lifecycle stages | MetaModule environment | Run backend work before ordinary modules and Lua plugins in that stage |
+| File | Invocation | Additional context |
+| --- | --- | --- |
+| `metainstall.sh` | Take over installation after an ordinary module is pre-extracted | `ZIPFILE`, `KSU_MODULE` and installer helper functions |
+| `post-fs-data.sh` | Before ordinary early module scripts | MetaModule's own script environment |
+| `metamount.sh` | After ordinary early scripts, Lua `post_fs_data` and property loading | `MODULE_DIR` points to the modules root |
+| `metauninstall.sh` | Clean backend state when removing an ordinary module | `MODULE_ID` identifies the removed module |
+| `post-mount.sh`, `service.sh`, `boot-completed.sh` | Corresponding lifecycle, before ordinary modules and Lua plugins | MetaModule's own script environment |
+| `late-load.sh` | Jailbreak/late-load stage | Cannot replace real early boot |
 
-If a script is absent, that hook is skipped. A disabled, pending-removal or otherwise unsafe MetaModule should not be treated as a normal active backend.
+Missing interfaces are skipped. When there is no enabled mount interface, selection follows the built-in rules above. `metamount.sh` waits until completion and does not share ordinary early scripts' 35-second wait deadline. Avoid network waits or persistent services here.
 
-## What happens during boot
+## Installing and changing backends
 
-The normal mount-related order is:
+When an external backend provides `metainstall.sh`, YukiSU first extracts the ordinary module into `/data/adb/modules_update/<id>/`, excluding any `.ksu_hot_install` supplied by the ZIP, then sources the script to take over installation. The old active module remains in place. A failed custom installer process removes this staging directory. Call `abort` or explicitly exit nonzero on failure; letting one command fail and continuing does not report a failed installation.
 
-1. run common `post-fs-data.d` scripts;
-2. apply pending update/removal state, directory contexts, SELinux rules and persisted features;
-3. run the MetaModule `post-fs-data.sh`;
-4. run ordinary-module `post-fs-data.sh` files;
-5. run Lua plugin `post_fs_data` callbacks;
-6. load module `system.prop` files;
-7. call the active MetaModule `metamount.sh`;
-8. apply per-app unmount configuration;
-9. enter `post-mount`, ordered as common scripts, MetaModule, ordinary modules, then Lua plugins.
+Pre-extraction supports ZIP entries such as LZMA/XZ and validates paths and entry types through YukiSU's extractor. The backend must still perform its own conversion, cleanup and installation-completion handling. Extracted files alone do not mean installation is complete. Report YukiSU, backend and ordinary-module versions with the full log when installation fails.
 
-`metamount.sh` runs after ordinary early scripts so modules can prepare required files first. Work that requires final mounted paths belongs in `post-mount` or later, not in an ordinary `post-fs-data.sh` that assumes replacement paths already exist.
+To change external backends:
 
-Late-load mode uses `late-load.sh` after real early boot has already passed, then loads properties and invokes `metamount.sh`. It is a delayed-loading path and cannot give init-early or already-running consumers the same timing as a normal boot.
+1. Record the current backend, dependent modules and configuration;
+2. Uninstall the old backend in the manager, then fully reboot to finish removal;
+3. Confirm it no longer owns mounting; when returning to built-in Kagami, check its enable switch and modes;
+4. If choosing another external backend, install it and reboot again;
+5. Verify a simple file module before checking the remaining modules.
 
-## During ordinary-module installation
+MetaModules do not support [hot installation](/en/modules/hot-install/). The manager also restricts ordinary installation while a backend with `metainstall.sh` is pending update/removal or disabled. Reboot after installation to run mounting.
 
-If the active MetaModule provides `metainstall.sh`, YukiSU lets it participate in ordinary-module installation. The same module ZIP can therefore receive different install-time handling under different MetaModules.
+Removing an external backend does not immediately remove existing mounts. The next boot selects a backend again. Enabled built-in Kagami handles file modules using its own modes. Migrate the external backend's private data and settings according to its documentation.
 
-Record all of these when reporting an issue:
+## Uninstall hooks
 
-- YukiSU version;
-- MetaModule name and version;
-- ordinary module name and version;
-- full install log;
-- declared backend requirements.
+When an ordinary module is actually removed, the still-enabled backend's `metauninstall.sh` runs first if present, followed by the module's own `uninstall.sh`. `MODULE_ID` identifies the ordinary module being removed; `KSU_MODULE` identifies the MetaModule running the hook. Both hooks wait for completion. A nonzero exit is logged and file cleanup continues.
 
-A ZIP name alone is rarely sufficient for reproduction.
+When removing multiple modules, MetaModule is removed last. Full YukiSU uninstall follows this order after restoring the boot image; a failed boot restoration stops before module cleanup. Make cleanup repeatable and keep resources that other modules still need during their uninstall hooks.
 
-## Replacing a MetaModule
+## Mount failures
 
-Do not treat a backend replacement like an ordinary module update. Use this sequence:
+Read the backend script log, then inspect the target file. If a root shell sees the file but the app does not, inspect that app's unmount policy, WebView unmounting and Kasumi view settings. Disable the test module and fully reboot to check that the original file is restored.
 
-1. record the current MetaModule, ordinary modules and important settings;
-2. remove the current MetaModule in the manager;
-3. complete a reboot so removal scripts and state cleanup can finish;
-4. confirm that no active MetaModule remains;
-5. install the replacement;
-6. reboot and verify one simple mount module first;
-7. inspect other modules instead of assuming old backend state is reusable.
+MetaModule does not provide core root, handle Lua plugins under `/data/adb/plugins/`, load `zygisk/*.so` or interpret `zn_modules.txt`. For system-file mount failures, start with backend scripts and target paths.
 
-If the current MetaModule is pending update/removal or disabled, let that state complete across one reboot. YukiSU install safety checks reject some operations that would overlap backends.
-
-That installation gate protects a custom `metainstall.sh` only when the active backend provides one. An allowed installation is not proof that the backend currently mounts correctly.
-
-## Effect of removal
-
-Removing the active MetaModule affects every ordinary module that depends on system-file mounting. Module directories and scripts can remain while their `/system` trees no longer appear as before.
-
-- script-only modules may continue to work;
-- a standalone WebUI may still open;
-- system-file modules lose their core behavior;
-- services tightly coupled to mounted results may fail or restart.
-
-## Verifying a MetaModule
-
-Do not stop at “installed.” Confirm that:
-
-- only one active MetaModule is shown;
-- it is not pending update/removal or disabled;
-- its `post-fs-data` and `metamount.sh` complete without errors;
-- one simple test module appears in the expected namespace;
-- disabling that module and rebooting removes the target file;
-- `metauninstall.sh` leaves no error when an ordinary module is removed.
-
-If a shell sees a mount but one app does not, inspect that app's namespace and module-unmount policy before declaring the entire backend broken.
-
-When “unmount modules for WebView” is enabled, the WebView Zygote loses ordinary module mounts in its namespace. A module that replaces WebView resources may therefore be invisible by design. This is a kernel per-app unmount policy, not a MetaModule installation failure. See [Module mounting](/en/modules/magic-mount/).
-
-## Capability and trust boundaries
-
-YukiSU does not promise that a particular MetaModule provides:
-
-- Magic Mount-compatible semantics;
-- OverlayFS;
-- automatic file-conflict resolution;
-- module hiding or integrity-check bypass;
-- seamless migration across root solutions;
-- recovery-mode installation for an unbootable device.
-
-Those belong to the implementation. A MetaModule processes files and scripts from many modules as root, placing it at a high-trust boundary. Use a backend with a credible source, history, update process and recovery guide.
-
-MetaModule does not process Lua plugins under `/data/adb/plugins/`, load `zygisk/*.so`, or interpret `zn_modules.txt`. Those paths belong to the `ksud` plugin runtime and YukiZygisk respectively.
-
-Continue with [Module system](/en/modules/overview/) for ordinary modules, or [Common troubleshooting](/en/troubleshoot/common/) for mount failures.
+Source references: [backend selection and interfaces](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/metamodule.cpp), [installation and module state](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module.cpp).

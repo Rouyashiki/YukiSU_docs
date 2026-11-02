@@ -21,7 +21,9 @@ Direct install writes a block device; selecting an image only creates a file. Do
 
 ## Persistent installation layouts
 
-| Layout | Backend command | Modified area | Target boundary |
+In v1.8.0, direct and inactive-slot installation no longer copy patched images to Download. Check the installation log and target partition after success; a missing download file is not a reason to reinstall. Use local or remote image patching when you need an output file to keep.
+
+| Layout | Backend command | Modified area | Accepted images |
 | --- | --- | --- | --- |
 | Traditional Ramdisk | `ksud boot-patch` | Places `ksuinit`, LKM and configuration in a boot Ramdisk | Selects `boot`, `init_boot` or another Ramdisk partition from target KMI and device layout |
 | ImgPatch / direct kernel | `ksud boot-patch-v2` | Embeds a bootstrap and LKM capsule in the ARM64 kernel inside `boot` | Accepts **only an AOSP `boot` image containing a kernel**; rejects `init_boot` and `vendor_boot` |
@@ -32,13 +34,13 @@ The home page reports the active load mode as Ramdisk, ImgPatch or late-load. Th
 
 The manager resolves target KMI from the current slot, OTA target slot or selected image, then passes the validated value to `ksud` through `--kmi`. When a bundled asset is requested, KMI must be present in the APK resource list. A failed or unmatched detection causes an explicit selection prompt instead of a guess based on the current Android release.
 
-For ordinary LKM installation, a present `init_boot` is normally preferred when the target is not `android12-*`; otherwise selection falls back to `boot`. This is the current general rule, not an override for device-maintainer instructions on unusual layouts.
+For ordinary LKM installation, YukiSU selects `init_boot` when it exists and the target is not `android12-*`; otherwise it selects `boot`. For an unusual partition layout, confirm the target using the device maintainer’s instructions before installing.
 
 ### ImgPatch / direct kernel
 
 Direct-kernel mode detects KMI from the `linux_banner` inside `boot`. If no local `.ko` was selected, it extracts the matching embedded `<kmi>_kernelsu.ko`. It then recovers the kallsyms/BTF information required by the target and writes the LKM and loader metadata into the kernel image.
 
-Important current boundaries:
+When using ImgPatch:
 
 - only `boot` is patched; the selected file must be a valid AOSP boot image containing an ARM64 kernel;
 - a device direct or inactive-slot install also inspects `boot` and `init_boot` and removes known files from a previous KernelSU Ramdisk layout;
@@ -60,22 +62,28 @@ The remote entry accepts an HTTPS URL and reads it through HTTP ranges. Supporte
 - a factory ZIP containing `boot.img`, `init_boot.img` or `vendor_boot.img` directly;
 - a factory ZIP with a STORED `image-*.zip` inner archive.
 
-The server must report `Content-Length` and `Accept-Ranges: bytes` to a HEAD request. The manager probes available boot partitions and boot KMI before extracting only the selected partition. A compressed `payload.bin`, a file-sharing landing page without Range support, or an authentication redirect is not a valid input.
+Manager probes with GET `Range: bytes=0-0`, requiring HTTP 206 and a valid `Content-Range` containing the total size. Subsequent range reads must also return 206. The manager probes available boot partitions and boot KMI before extracting only the selected partition. A compressed `payload.bin`, a file-sharing landing page without Range support, or an authentication redirect is not a valid input.
 
 The remote entry currently uses traditional `boot-patch`. To use ImgPatch, provide a local `boot.img`, or choose device direct/inactive-slot installation from an already rooted environment.
+
+## Boot configuration and configuration-only mode
+
+Advanced options include forced features, preinit, boot debugging, and an optional kernel-module blacklist. The blacklist requires explicit opt-in; a prefilled list alone does not enable it. Runtime toggles cannot override forced features.
+
+Configuration-only mode uses traditional `boot-patch --no-install`. It updates Ramdisk configuration without installing or replacing init/LKM, preserving any existing Ramdisk loading chain without providing initial root by itself, skips LKM KMI detection, and is unavailable for ImgPatch. Configuration is rebuilt from the current selection. Omitted shell grants, forced features, and blacklists are cleared. See [Boot configuration](/en/manager/boot-config/) and [CLI details](/en/dev/boot-images/).
 
 ## Update and recovery
 
 - Ramdisk and ImgPatch can be switched, but the transition must remove the other layout's payload. Do not manually overwrite only one `.ko`.
-- Device-side ImgPatch installation retains a stock boot backup for each slot. Keep a separate stock image from the exact firmware; an on-device copy must not be the only recovery plan.
+- ImgPatch associates stock backups with content identifiers and validates them during restoration. Keep a separate stock image from the exact firmware; an on-device copy must not be the only recovery plan.
 - Restore stock image and permanent uninstall are different operations. The latter also removes YukiSU userspace and module data.
 - Installing an APK does not modify the LKM or boot image. `ksud` also has an independent synchronization and integrity state; see [Update YukiSU](/en/guide/update/).
 
 For exact command-line parameters, continue with [Boot-image commands](/en/dev/boot-images/).
 
-## Sources of truth
+## Source code
 
-- [Manager installation flow](https://github.com/Rouyashiki/YukiSU/blob/main/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Install.kt)
-- [`boot-patch` and restore implementation](https://github.com/Rouyashiki/YukiSU/blob/main/userspace/ksud/src/boot/boot_patch.cpp)
-- [`boot-patch-v2` ImgPatch implementation](https://github.com/Rouyashiki/YukiSU/blob/main/userspace/ksud/src/boot/boot_patch_v2.cpp)
-- [Remote-image extraction](https://github.com/Rouyashiki/YukiSU/blob/main/manager/app/src/main/java/com/anatdx/yukisu/core/tasks/ExtractImage.kt)
+- [Manager installation flow](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Install.kt)
+- [`boot-patch` and restore implementation](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch.cpp)
+- [`boot-patch-v2` ImgPatch implementation](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch_v2.cpp)
+- [Remote-image extraction](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/core/tasks/ExtractImage.kt)

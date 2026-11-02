@@ -5,232 +5,87 @@ title: 功能概览
 
 # 功能概览
 
-YukiSU 的功能不少，但不用把所有开关背下来。先分清它们属于哪一层：Root 和授权、C++ 用户空间、模块与挂载、YukiZygisk、管理器工具。哪一层出问题，就去查哪一层。
+YukiSU 提供应用授权、内置模块挂载、YukiZygisk 和启动镜像工具。下表帮你找到对应入口；从旧版本升级时，请同时更新管理器、设备侧 `ksud` 和需要更新的 LKM，步骤见[更新指南](/guide/update/)。
 
-::: info 看到开关，不代表当前环境一定支持
-选项是否可用，会受 LKM 编译配置、管理器、设备里的 `ksud` 和内核能力影响。页面写着“不支持”时，通常不是按钮坏了，而是当前运行环境确实缺这一项。
-:::
+## 各层分别负责什么
 
-## 先看功能之间的关系
+| 需求 | 负责组件 | 说明 |
+| --- | --- | --- |
+| 应用 Root 与权限范围 | 内核、管理器、App Profile | 按应用授权，支持身份、capabilities、SELinux 与 namespace 配置 |
+| 模块脚本、属性与策略 | `ksud` | 不要求系统文件挂载或 Zygisk |
+| 将模块文件挂到系统路径 | 内置 Kagami 或外部 MetaModule | 有启用的外部 `metamount.sh` 时优先调用它，否则使用内置 Kagami |
+| Zygisk / Native ZN 模块 | YukiZygisk | 可独立开关，需核对 ABI、目标进程和模块 API |
+| 启动镜像、分区与 AVB 工具 | 管理器与 `ksud` | 文件修补、设备写入和启动配置是不同操作 |
+| 一次性维护任务 | 管理器脚本运行器 | 执行后保留历史，不作为已安装模块管理 |
 
-| 想做什么 | 由谁负责 | 需要 MetaModule | 需要 YukiZygisk |
-| --- | --- | --- | --- |
-| 给应用 Root | 内核 + 管理器 | 否 | 否 |
-| 限制 Root 身份和能力 | App Profile | 否 | 否 |
-| 跑模块启动脚本 | `ksud` | 否 | 否 |
-| 把文件挂进 `/system` 等路径 | 普通模块 + MetaModule | 是 | 否 |
-| 打开模块 WebUI | 管理器 + 模块 | 通常不需要 | 否 |
-| 注入 Zygote、加载 Zygisk 模块 | YukiZygisk | 否 | 是 |
-| 修补镜像、备份分区 | 管理器 + `ksud` | 否 | 否 |
+内置 Kagami 的 `auto` 按内核支持、已启用的后端和模块文件布局选择 OverlayFS 或 Magic Mount；实际挂载失败不会自动改走另一个后端。Kasumi 后端需显式选择。外部 MetaModule 脚本执行失败时不会自动再叠加 Kagami 挂载。详见[模块挂载](/modules/magic-mount/)。
 
-MetaModule 管文件挂载，YukiZygisk 管 Zygote 注入。两者名字都经常和“模块”一起出现，但完全不是同一件事。
+## Feature 编号
 
-## Feature 编号怎么分
+当前 UAPI 定义 13 项 Feature，ID 并不连续。`0–99` 是 KernelSU 编号区，YukiSU 扩展从 `100` 开始；打开“设置 → 功能控制”即可查看当前内核支持的项目、开关值和强制状态。
 
-当前源码注册 11 项 Feature。ID `0–99` 留给 KernelSU 兼容编号；YukiSU 自有扩展从 `100` 开始：
+| ID | 名称 | 用途 |
+| --- | --- | --- |
+| 0 | `SU_COMPAT` | 传统 su 入口 |
+| 1 | `KERNEL_UMOUNT` | 应用环境中的模块挂载卸载策略 |
+| 2 | `SULOG` | su 请求与授权日志 |
+| 3 | `ADB_ROOT` | 受支持的 ADB root 链 |
+| 4 | `SELINUX_HIDE` | 调整应用侧 SELinux 状态视图 |
+| 6 | `SHELL_SU_ADB_ONLY` | shell 已获授权时，进一步限制为可信会话来源 |
+| 101 | `MAGISK_COMPAT` | Magisk 风格的 su 授权请求提示 |
+| 102 | `DEFAULT_NO_NEW_PRIVS` | 默认 Root Profile 的 YukiSU no-new-privs 标记 |
+| 103 | `YUKIZYGISK` | 内置 YukiZygisk 运行时 |
+| 104 | `HIDE_BOOTLOADER` | 启动完成后调整 bootloader / Verified Boot 属性视图 |
+| 105 | `KASUMI_SUCOMPAT` | Kasumi su 入口 |
+| 106 | `KASUMI` | 内置 Kasumi 能力总开关 |
+| 107 | `UNSHARE_MNT` | 可选的挂载视图清理 |
 
-| ID | Feature | 来自哪里 | 简单说 |
-| --- | --- | --- | --- |
-| 0 | `SU_COMPAT` | 上游 | 兼容的 `su` 调用路径 |
-| 1 | `KERNEL_UMOUNT` | 上游 | 为应用环境处理模块挂载卸载 |
-| 2 | `SULOG` | 上游 | 记录 `su` 请求和授权结果 |
-| 3 | `ADB_ROOT` | 上游 | 让受支持的 ADB 链获得 Root |
-| 4 | `SELINUX_HIDE` | 上游兼容 | 清理应用侧 SELinux 探测结果 |
-| 5 | `WEBVIEW_ZYGOTE_UMOUNT` | KernelSU 预留区 | 在 WebView sandbox 继承前卸载模块挂载 |
-| 100 | `ENHANCED_SECURITY` | YukiSU | 收紧绕开 YukiSU 的提权与 UID 降级 |
-| 101 | `MAGISK_COMPAT` | YukiSU | 给未预先授权的应用弹出兼容式授权请求 |
-| 102 | `DEFAULT_NO_NEW_PRIVS` | YukiSU | 默认 Root Profile 带 `no_new_privs` |
-| 103 | `YUKIZYGISK` | YukiSU | 开关内置 YukiZygisk |
-| 104 | `HIDE_BOOTLOADER` | YukiSU | Android 启动完成后重写解锁/Verified Boot 属性视图 |
+管理器将 su 入口呈现为关闭、传统、KSM 三种选择，而非让用户任意组合 ID 0 和 105。禁用 Kasumi 会处理依赖它的 su 设置。配置入口与生效时机见[功能控制](/manager/feature-control/)和[Kasumi](/manager/kasumi/)。
 
-截至 2026-09-02 的官方 KernelSU `main` `e38512f1`，公开 `feature.rs` 枚举的是 `0–4`；YukiSU 的 WebView Zygote umount 使用其预留编号区的 ID 5，并在管理器中归入 KernelSU 功能组。不能因此把 ID 5 写成两边当前完全一致。SuperKey、动态管理器和 UTS View 虽然也是 YukiSU 能力，但不属于这组 Feature ID。
+ID 6 不会自动给 shell 授权，也不等于 ADB Root。它在 shell 已获 Root 授权的前提下，检查进程祖先是否来自 `adbd` 或 YukiSU root domain。
 
-这些内核开关现在集中在“设置 → 功能控制”，分成 KernelSU 与 YukiSU 两组。管理器通过 `ksud feature set` 修改运行值，再执行 `feature save`；保存或 ADB/Magisk 后续操作失败时会回滚，而不是只把 UI 按钮翻过去。
+v1.8.0 不再使用 ID 5 和 100：WebView 卸载改到“超级用户 → WebView Zygote”的非 Root 配置；“增强安全”已移除。不要在启动配置或脚本中继续设置这两个编号。
 
-## Root 授权
+## 运行时设置与启动配置
 
-### 允许列表
+管理器修改 Feature 后会保存配置。ADB Root 还要重启 `adbd`，Magisk 兼容还要调整 su 入口；页面提示失败时，先查看错误并恢复设置。模块接管的 Feature 会标出管理模块，先停用对应模块的接管配置再手动修改。标有“重启生效”的项目，需要完整重启。
 
-装了 YukiSU，不等于所有应用自动拿 Root。应用请求 `su` 时，内核会看调用方是谁、管理器有没有授权。
+启动配置可以强制固定受支持的 Feature。被强制固定的项目会显示对应状态，不能在运行时直接覆盖；要修改它，需要重新修补相关启动镜像并完整重启。安装页面还提供 preinit 开关、启动调试、shell 授权与可选内核模块黑名单。详见[启动配置](/manager/boot-config/)。
 
-撤销权限后，新的 `su` 请求会被拒绝；已经拿到 Root、仍在运行的进程不会突然被打回普通用户。想确认撤销效果，先结束那个应用再测试。
+这些设置不等价于关闭 SELinux、锁回 bootloader 或保证通过完整性检测。ID 102 是 YukiSU 自己的提权限制标记，也不是通用 Linux `PR_SET_NO_NEW_PRIVS`。
 
-### App Profile
+## 模块与运行阶段
 
-App Profile 不只管“允许/拒绝”，还可以控制 Root 之后的：
+- 普通模块使用 `module.prop`、生命周期脚本、`system.prop`、`sepolicy.rule` 等结构。
+- [热安装](/modules/hot-install/)要求模块显式支持，并满足当前运行环境条件；它不能即时重放所有启动行为。
+- [preinit](/modules/preinit/)在 SELinux setup 之前执行已同步的早期动作，下次完整启动生效，不能靠热安装补跑。
+- [一次性脚本](/modules/one-shot/)适合独立维护任务，支持仓库条目和本地 ZIP、参数表单与运行历史。
+- [WebUI](/modules/webui/)和 [Lua 插件](/modules/plugin/)是不同扩展入口，应分别核对 API 与权限。
 
-- UID、GID 和附加组；
-- Linux capabilities；
-- SELinux domain；
-- namespace；
-- `no_new_privs`；
-- Root / non-root profile。
+## 授权与认证
 
-默认 Profile 能满足多数情况。只有真的知道应用缺哪项能力时再改；UID、SELinux domain 或 namespace 填错，应用崩溃、看不到存储都不奇怪。详见 [App Profile](/manager/app-profile/)。
+Root 授权控制应用能否提权；[App Profile](/manager/app-profile/)进一步约束提权后的身份和环境。撤销授权影响新的请求，已经取得 Root 的进程需退出后再验证。
 
-## LKM 与 TSR
+v1.8.0 的默认 Root SELinux 域为 `u:r:ksu:s0`，默认启用 Feature 102。已有自定义域和逐应用标志继续保留；升级后先测试现有授权，不需要批量重建 Profile。
 
-YukiSU 只运行在 `kernelsu.ko` 中，不提供 built-in 模式。
+官方管理器默认通过 APK 身份认证；[SuperKey](/manager/superkey/)和动态管理器提供额外认证入口。动态管理器的兼容版本覆盖只改变它看到的版本值。第三方管理器调用了 YukiSU 没有实现的命令时，改版本值也无法运行该命令。
 
-TSR 是 **Tracepoint Syscall Redirect** 的缩写，沿用当前官方 KernelSU LKM 的 tracepoint syscall redirect 模型。YukiSU 仍有自己的移植与扩展代码，两边不是可互换的相同二进制；“TSR”本身也不是另一套独占 Hook。
-
-想让 LKM 正常工作，内核仍要有需要的 syscall tracepoints、Kprobes 和 Kretprobes，LKM 也必须匹配 KMI、符号版本和模块配置。
-
-`CONFIG_KSU_KRETPROBES_SUCOMPAT` 仍出现在当前 `Kconfig`，但实现源码没有读取它来切换另一条 sucompat 路径。不要把打开这个惰性选项写成已经启用实验性 Hook；反馈问题时仍应附实际内核配置。
-
-## C++ 用户空间
-
-### `ksuinit`
-
-它负责在启动阶段把 LKM 接起来。这里出问题时 Android 可能还没启动，管理器自然也帮不上忙，所以原厂镜像、boot log 和 kernel log 很重要。
-
-### `ksud`
-
-它是管理器后端，也是模块运行时。主要工作包括：
-
-- 安装、启停、更新和卸载模块；
-- 跑 `post-fs-data`、`service`、`boot-completed` 等阶段；
-- 调用 MetaModule；
-- 支持镜像修补、LKM 安装和 Ramdisk Editor；
-- 处理配置、SELinux 和诊断。
-
-APK 里有一份内置 `ksud`，设备上还有一份 `/data/adb/ksud`。主页会按实际 ELF 内容检查两者：可以手动同步，或打开默认关闭的“自动更新 ksud”在应用冷启动时同步。发现设备侧文件被替换时，管理器会显示完整性警告；这些操作都不会替你更新 LKM 或启动镜像。
-
-### `su`
-
-它是授权应用发起提权的用户空间入口。是否放行仍由内核和应用策略决定，单独替换一个 `su` 文件绕不过授权。
-
-## 管理器认证
-
-官方管理器默认使用包名与 APK 签名认证，大多数人到这里就结束了。
-
-需要定制部署时，还有：
-
-- **SuperKey**：通过 `prctl` 认证管理器 UID，只认管理器，不直接给应用 Root；
-- **动态管理器**：额外配置信任的管理器；
-- **禁用 APK 签名验证**：主动放弃签名回退，只适合你明确知道后果的场景。
-
-设置 SuperKey 不会自动关闭签名认证。详细原理见 [SuperKey 认证](/manager/superkey/)。
-
-## 模块与 MetaModule
-
-### 普通模块
-
-YukiSU 按上游约定处理模块目录、`module.prop` 和各阶段脚本。模块可以只跑脚本、改属性或加 SELinux 规则，完全不碰系统文件挂载。
-
-### MetaModule
-
-模块要把文件放进 `/system`、`vendor`、`product` 等路径时，才轮到 MetaModule。YukiSU 完全跟随官方 KernelSU 的接口和执行顺序，同一时间只允许一个活动后端。
-
-MetaModule 可以自己选择 OverlayFS、bind mount 或其他做法。管理器显示“模块已安装”，只说明 ZIP 写进了模块目录，不代表 `system/` 已经挂出去。详见[模块系统](/modules/overview/)。
-
-### WebUI
-
-模块可以在 `webroot/` 里放一个管理页面，通过 `kernelsu` JavaScript API 执行命令或读取模块信息。这个页面常常能跑 Root 命令，不是普通网页玩具；来源、输入校验和远程脚本都要认真看。
+模块安装使用的全局兼容版本设置与按签名的动态管理器兼容值是两套设置，排查版本限制时要分别记录。
 
 ## YukiZygisk
 
-YukiZygisk 是可选的 Zygisk 运行环境，可以直接加载兼容 Zygisk Next 的模块，不需要另外安装 Magisk 或 Zygisk Next。
+内置运行时支持普通 Zygisk 模块和 Native ZN 目标。管理器提供加载策略、匿名内存选项、进程监视、崩溃保护与恢复状态。开启后完整重启，再启动目标应用，在 YukiZygisk 页面查看注入结果，并检查模块提供的功能是否正常。
 
-管理器能显示：
+关闭 YukiZygisk 后，基础 Root 与普通模块处理仍可使用。详见[功能与状态](/yukizygisk/features/)和 [Native ZN](/yukizygisk/native-zn/)。
 
-- 总开关和当前注入状态；
-- 识别到的 Zygote 与模块；
-- 64/32 位运行情况；
-- Native 注入目标；
-- 当前与跨重启保留的诊断；
-- 同名 Zygote PID 更替累计 3 次后的注入安全模式。
+## 管理器维护工具
 
-关掉它，Root、App Profile、普通模块和 MetaModule 仍然工作。详见 [YukiZygisk 介绍](/yukizygisk/intro/)。
+管理器可以修补本地或远程镜像、处理 OTA 槽位、备份与刷写分区、编辑 Ramdisk 文本或二进制、查看与修改 AVB 状态、恢复 App Profile 备份，并导出诊断。使用前核对具体操作写入哪个文件或分区，详见[管理器概览](/manager/overview/)。
 
-## KernelSU 编号区 Feature（0–5）
+管理器统一使用 Material 3 Expressive，提供紧凑布局和动效偏好。Kasumi 规则支持策略绕过、冲突提示与 SELinux Guard；模拟软重启按 daemon 报告的能力开放，并显示规则恢复进度。具体操作见[Kasumi](/manager/kasumi/)和[软重启](/manager/soft-reboot/)。
 
-当前官方 KernelSU `main` 公开 ID `0–4`。YukiSU 保持这五项兼容，并在上游预留编号区实现 WebView Zygote umount（5）；管理器把 0–5 放在同一组，不代表 ID 5 已是当前两边共有能力。
+## 源码
 
-### sucompat
-
-为授权应用提供兼容的 `su` 路径。当前构建没编进对应支持时，管理器会显示不可用。
-
-### 内核卸载
-
-可以减少应用 namespace 中不需要暴露的模块挂载。它不等于撤销 Root，也不是 MetaModule 的替代品。
-
-### sulog
-
-记录谁请求了 `su`、最后放行还是拒绝。日志可能带应用标识和操作上下文，公开前先看一眼。
-
-### ADB root
-
-让支持的 ADB 调试链拿到更高权限。开着无线调试、又连着不可信网络时，最好别顺手再把 ADB root 长期开着。
-
-### SELinux hide
-
-隐藏上游定义的 SELinux 状态。它不是关闭 SELinux，也不保证通过完整性或 Root 检测。策略出问题时留住原始 enforcing 状态和日志，别先全局 permissive 再说。
-
-### WebView Zygote umount（5）
-
-这是显式选择的兼容性/隔离取舍：在全局 Kernel Umount 仍启用时，于 UID 1053 的 WebView Zygote 产生 sandbox 子进程前卸载模块挂载，减少子进程继承的挂载信息。关闭全局卸载机制也会让这里失效；代价是修改 WebView 资源的模块可能失效，而且开关要重启后才能完整反映到新进程。
-
-## YukiSU Feature（100–104）
-
-### 增强安全（100）
-
-阻止某些绕开 YukiSU 的提权，以及未经授权的 UID 降级。它收紧的是提权入口，不是“隐藏 Root”开关。
-
-### Magisk 兼容授权提示（101）
-
-没有预先进入允许列表的应用发起兼容请求时，可以弹出更接近 Magisk 使用习惯的授权提示。最终点允许还是拒绝，仍然由你决定。
-
-### 默认 `no_new_privs`（102）
-
-给默认 Root Profile 设置 YukiSU 的 no-new-privs 标记，阻止该线程及子代之后再次通过 YukiSU 提权/逃逸。它不是通用 Linux `PR_SET_NO_NEW_PRIVS`；特殊工具需要再次走 YukiSU escalation 时，应单独配置 Profile。
-
-### YukiZygisk（103）
-
-开关内置 YukiZygisk。它控制 Zygote 注入，不控制基础 Root。
-
-### 解锁状态隐藏（104）
-
-`ksud` 在 Android 启动完成后用内置 resetprop 重写一组 bootloader、Verified Boot、构建类型与 ADB 安全属性的可见值。它默认关闭，启用后应重启；它不会重新锁定 bootloader，也不承诺通过完整性或 Root 检测。关闭开关也不能把本次开机已重写的只读属性即时恢复，需以新一轮启动状态为准。
-
-## 其他扩展
-
-### UTS View
-
-改变目标 namespace 中看到的 `uname` 等系统标识。它改的是“看到什么”，不会真的把正在运行的内核换掉。
-
-SuperKey 和动态管理器属于认证扩展，UTS View 属于 namespace 视图功能。它们不占用 `100–104` 这组编号。
-
-## 管理器工具
-
-YukiSU Manager 还可以：
-
-- 修补启动镜像；
-- 直接安装到当前槽位；
-- OTA 后安装到未使用槽位；
-- 在传统 Ramdisk 与 ImgPatch 内核直嵌布局之间选择；
-- 通过支持 HTTP Range 的 HTTPS 地址探测 OTA、factory ZIP 或 `payload.bin`，只提取所选启动分区；
-- 使用内置 KMI 资源或本地 LKM；
-- 查看、备份和刷写分区；
-- 运行受支持的 AnyKernel3 包；
-- 编辑 Ramdisk；
-- 检查更新包的 PGP 与 APK 签名。
-
-都放在一个 App 里，不代表点起来都一样安全。会写启动分区、切槽位或同步设备侧 `ksud` 的操作，动手前留好日志和原厂镜像。
-
-## 最后再记六句话
-
-- 不开 YukiZygisk，Root 照常用；
-- 不装 MetaModule，脚本模块可能照常跑，但 `system/` 不会自己挂载；
-- 装 APK 不等于装了 LKM；
-- 更新 APK 不等于 LKM 或启动镜像已更新，`ksud` 是否同步则看主页实际校验状态；
-- 给应用 Root 不等于 App Profile 一定配置合理；
-- 代码里有功能，不等于你的设备和构建一定支持。
-
-还在比较上游项目的话，继续看 [YukiSU 与 KernelSU 的区别](/guide/yukisu-vs-kernelsu/)。
-
-## Feature 事实来源
-
-- [YukiSU Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/main/uapi/feature.h)
-- [YukiSU `ksud` Feature 注册与持久化](https://github.com/Rouyashiki/YukiSU/blob/main/userspace/ksud/src/core/feature.cpp)
-- [官方 KernelSU `e38512f1` Feature 枚举](https://github.com/tiann/KernelSU/blob/e38512f1255ea454d34cc2008d2ef7932547fad6/userspace/ksud/src/feature.rs)
+- [Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/feature.h)
+- [Feature 保存与恢复](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp)
+- [挂载后端选择](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/metamodule.cpp)

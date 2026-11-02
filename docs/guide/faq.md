@@ -5,111 +5,88 @@ title: 常见问题
 
 # 常见问题
 
-## YukiSU 是 KernelSU 换皮吗？
+这里回答安装、模块、授权和更新中最常见的问题。操作报错时，转到[常见问题排查](/troubleshoot/common/)。
 
-不是。它继续兼容 KernelSU 的模块、MetaModule、App Profile，并让 TSR/LKM Hook 与上游语义对齐；用户空间则用 C++ 重写，管理器、认证扩展、ImgPatch 与 YukiZygisk 由 YukiSU 维护。生态能共用，不代表管理器和 `ksud` 能互换。完整说明见 [YukiSU 与 KernelSU 的区别](/guide/yukisu-vs-kernelsu/)。
+## 哪些设备可以使用？
 
-## 哪些设备受支持？
+Android 12（API 31）及以上、ARM64、GKI 2.0、Linux 5.10+，并具备所需模块加载、Kprobes、Kretprobes 与 syscall tracepoints。YukiSU 只支持 `CONFIG_KSU=m`。完整构建有 8 个标准 KMI，但厂商修改了导出符号、vermagic 或模块配置时，要使用该内核的专用 LKM，见[兼容范围](/guide/compatibility/)。
 
-当前正式范围是：
+## 只安装 APK 就能 Root 吗？
 
-- ARM64；
-- Android 12（API 31）及以上；
-- GKI 2.0；
-- Linux 5.10 及以上；
-- LKM 模式，`CONFIG_KSU=m`；
-- 具备项目要求的 Kprobes、Kretprobes 与 syscall tracepoints。
+不能。APK 提供管理界面和配套资源，仍需加载匹配的 LKM。设备还没有 Root 时，先修补原厂启动镜像，再按设备流程刷入；[越狱模式](/guide/jailbreak-mode/)也有独立引导条件。
 
-Android 11 及以下、GKI 1.0、non-GKI、ARM32、x86_64 与 built-in `CONFIG_KSU=y` 不受支持。当前全量构建覆盖从 `android12-5.10` 到 `android17-6.18` 的 8 个标准 KMI；进入范围也不代表任意 LKM 都能加载，仍需匹配 KMI、vermagic、符号与内核配置。见[兼容范围](/guide/compatibility/)。
+## Ramdisk、ImgPatch 与仅配置镜像有什么区别？
 
-## “仅 LKM”是不是只有内核，没有用户空间？
+Ramdisk 用 `ksuinit` 加载 LKM；ImgPatch 把 bootstrap 与 LKM capsule 放进 `boot` 的 ARM64 内核。仅配置 Ramdisk 不安装或替换 LKM，保留已有加载链；它不能给原厂镜像单独增加 Root。三种模式的输入要求和恢复步骤见[安装与镜像模式](/guide/install-modes/)及[启动配置](/manager/boot-config/)。
 
-不是。“仅 LKM”说的是 YukiSU 不做 built-in。管理器、C++ `ksud` / `ksuinit` / `su`、模块系统、MetaModule 和 YukiZygisk 一个没少。
+## 为什么更新 APK 后仍然缺功能？
 
-## 管理器能一键 Root 所有支持设备吗？
+APK、`/data/adb/ksud` 和正在运行的 LKM 是不同组件。同步 `ksud` 不会改启动镜像，更新磁盘上的 LKM 也要完整重启才能验证运行版本。见[更新指南](/guide/update/)。
 
-不能。它能修补本地镜像、从支持 HTTP Range 的 HTTPS OTA/factory 包提取启动分区、直接安装和处理 OTA 槽位，但不知道你给的固件是否属于这台设备，也不能把错误 KMI 的 `.ko` 变正确。KMI、分区、槽位与 Ramdisk/ImgPatch 模式仍要确认。开始前看[快速开始](/guide/get-started/)。
+## 普通模块还必须安装 MetaModule 吗？
 
-## 只安装管理器 APK 会发生什么？
+不必。纯脚本、属性和策略模块本来就不需要系统文件挂载；需要挂载的模块可以使用内置 Kagami。启用的外部 MetaModule 提供 `metamount.sh` 时优先由它挂载；没有时用 Kagami。见[模块挂载](/modules/magic-mount/)。
 
-你会得到一个能打开的管理器，仅此而已。没有兼容 LKM 时显示“未安装”、部分页面不可用都很正常；APK 装上了不等于手机已经 Root。
+## 已安装成功为什么还没效果？
 
-## 为什么同为 Linux 5.10，LKM 还是不能加载？
+先看模块是否待重启，再查脚本日志和实际挂载后端。全局文件已变化、应用内却没变化时，检查该应用的挂载隔离设置。Zygisk 模块还要在 YukiZygisk 页面确认 ABI、目标进程和注入结果。
 
-因为 `5.10` 只是大版本。KMI、vermagic、符号、配置和厂商补丁只要有一项对不上，模块就可能加载失败。别强制加载，换匹配构建或拿设备对应内核树重编。
+## 所有模块都可以热安装吗？
 
-## Ramdisk 与 ImgPatch 有什么区别？
+不能。需要模块作者显式请求、模块不是 MetaModule、未处于安全模式，并通过请求与路径检查。`init.rc`、preinit、启动快照和已运行进程的状态仍需重启；热安装脚本失败后不会自动恢复旧模块目录，也不会撤销脚本已做的修改。见[热安装](/modules/hot-install/)。
 
-传统模式由启动 Ramdisk 中的 `ksuinit` 加载 LKM，可按布局修补 `boot` 或 `init_boot`。ImgPatch 把 bootstrap 与 LKM capsule 直接放进 `boot` 的 ARM64 内核，只接受带内核的 AOSP `boot` 镜像。它们都是 LKM 模式，不是谁比谁“Root 更深”；输入、备份与恢复路径不同。见[安装与镜像模式](/guide/install-modes/)。
+## 一次性脚本为什么不在已安装模块列表里？
 
-## SuperKey 是必须的吗？
+它只执行一次任务并记录最近运行结果，不保留为模块，也不进入模块更新列表。运行结果和参数见[一次性脚本](/modules/one-shot/)。
 
-不是。官方管理器默认靠包名和 APK 签名认证。只有自定义签名或私有管理器才需要考虑 SuperKey，第一次安装留空就好。
+## preinit 显示准备成功，是否已经执行？
 
-## SuperKey 会替代 APK 签名吗？
+不是。它表示为下一次启动准备了快照；早期动作结果要查启动日志。连续启动失败会触发独立保护；重置计数不会立即运行动作。见[preinit](/modules/preinit/)。
 
-不会默认替代。设置 SuperKey 后，签名认证仍可保留；只有另行启用“禁用 APK 签名验证”，才会进入 SuperKey-only。YukiSU 通过 `prctl` 使用它确认管理器 UID，它不是 KernelPatch/APatch 的 NR45 通用 SuperCall 密钥。详见 [SuperKey 认证](/manager/superkey/)。
+## Feature 为什么显示“强制”且不能修改？
 
-## 管理器内置 `ksud` 和已安装 `ksud` 有什么区别？
+该值来自启动配置。需要更改启动镜像中的强制项并完整重启，普通运行时开关不能覆盖。见[启动配置](/manager/boot-config/)。
 
-一个装在 APK 里，一个落在 `/data/adb/ksud`。主页按实际 ELF 校验并提供手动同步；设置中的冷启动自动同步默认关闭。运行时文件被替换还会触发完整性警报。无论哪种同步都只处理 `ksud`，不会顺便更新 LKM、启动镜像或重启。
+## WebView 卸载和“增强安全”开关去哪了？
 
-## 每个模块都需要 MetaModule 吗？
+v1.8.0 将 WebView 卸载移到“超级用户 → WebView Zygote”的非 Root 配置，修改后重新启动受影响的进程；要重建共享 WebView Zygote，完整重启设备。Feature 5 已停用，“增强安全”及 Feature 100 已移除。旧教程中的这两个编号不再适用。见[App Profile](/manager/app-profile/)。
 
-不需要。只跑脚本、改属性、加 SELinux 规则或只带 WebUI 的模块，可以完全不挂载系统文件。模块里有 `system/`、要往 `/vendor` 等路径放东西时，才通常需要 MetaModule。
+## 升级后默认 Root 域和防逃逸设置为什么变了？
 
-## 为什么模块装上了却没有文件挂载？
+v1.8.0 默认使用 `u:r:ksu:s0`，首次迁移将 Feature 102 设为开启。已有自定义域和逐应用标志继续保留，旧 `su` 策略保留兼容处理。需要调整时打开该应用的 App Profile，先确认使用的是默认配置还是自定义配置，再修改对应设置。
 
-因为“已安装”只代表 ZIP 解进了模块目录，不代表文件已经挂出去。看它有没有 `system/`、有没有 `skip_mount`、MetaModule 是否活动，以及 `metamount.sh` 有没有报错。详见[模块系统](/modules/overview/)。
+## 已给 shell Root，为什么仍被拒绝？
 
-## YukiSU 的 MetaModule 与 KernelSU 一样吗？
+检查 ID 6 `SHELL_SU_ADB_ONLY`。它会在已有授权之外要求 `adbd` 或 YukiSU root-domain 祖先；找不到这两类祖先的 shell 会被拒绝。它和 ADB Root、普通应用授权不是同一个设置。
 
-公开协议一致。YukiSU 遵守官方 KernelSU 的 MetaModule 接口、脚本和生命周期；设备、版本和接口要求仍匹配时，切换通常可以保留现有后端。具体挂载实现与普通模块自己的 Android、ABI 和版本限制仍需实际验证。
+## SuperKey 是否必须？
 
-## 什么是越狱模式？
+不是。官方管理器默认靠 APK 身份认证。设置 SuperKey 不会自动关闭签名回退；只有另行禁用签名验证才改变这一点。它用于认证管理器 UID，不是普通应用的 Root 密码。见[SuperKey](/manager/superkey/)。
 
-就是 late-load：Android 已经启动后，再临时加载匹配 KMI 的 LKM。它只对本次开机有效，需要 SELinux Permissive，也赶不上 PID 1 的早期阶段。YukiSU 跟随上游行为，用户空间用 C++ 实现。详见[越狱模式](/guide/jailbreak-mode/)。
+## 动态管理器或版本兼容设置会改变内核吗？
 
-## 从 KernelSU 切换要先卸载所有模块吗？
+不会。它们改变特定对象看到的兼容值，不更换实际版本，也不自动兼容第三方管理器的私有命令。模块安装的全局覆盖与动态管理器的按签名覆盖应分别配置。
 
-不需要全部移除。built-in KernelSU 恢复原厂 boot 后不要先重启，直接使用当前会话仍存在的 KernelSU Root 安装 YukiSU；KernelSU LKM 则连镜像都不用恢复，可直接安装。符合公开协议且设备/版本要求仍满足的 MetaModule 与普通模块通常可以保留，重启后仍要逐层验证。详见[从 KernelSU 切换](/guide/switch/kernelsu/)。
+## 不启用 YukiZygisk，Root 能用吗？
 
-## Magisk / KernelSU 模块能直接复用吗？
+能。基础 Root、App Profile 与普通模块处理不依赖它。需要普通 Zygisk 或 Native ZN 模块时再开启它，并按模块作者要求选择 Android 版本、ABI 与目标进程。
 
-别只看 ZIP 长得像。模块可能偷偷依赖 Magisk 工具、某个挂载后端、WebUI API、Android 版本或 ABI。作者明确写兼容最好；没写的话，至少单独测试，别和十个模块一起装。
+## YukiZygisk 的安全模式和模块崩溃保护是一回事吗？
 
-## YukiZygisk 是什么？
+不是。同名 Zygote PID 更替达到内核阈值会触发全局注入保护。模块崩溃保护则在崩溃证据满足关联条件时，暂停对应普通 Zygisk 模块在本次开机的后续注入；它不暂停 Native ZN 模块，也不卸载已加载的代码。进程退出后，查看退出码、崩溃日志和被暂停的模块列表，再决定停用哪个模块。见[功能与状态](/yukizygisk/features/)。
 
-它是 YukiSU 自带的 Zygisk 运行环境。YukiSU 自己注入 Zygote、自己加载模块，可以直接使用兼容 Zygisk Next 的模块，不用再装 Magisk 或 Zygisk Next。
+## 软重启能代替完整重启吗？
 
-## 不开启 YukiZygisk，YukiSU 还能用吗？
+不能。软重启不会重新加载内核或执行 bootloader、早启动配置和 preinit。v1.8.0 在 daemon 确认支持恢复后允许模拟软重启，并恢复 Kasumi 规则；条件不满足时会显示原因。请求已接受后仍要等待最终恢复结果，失败时保存日志并完整重启。见[软重启](/manager/soft-reboot/)。
 
-当然可以。它只是给 Zygisk 模块准备的加分项，Root、App Profile、普通模块和 MetaModule 都不靠它。
+## 切换 Root 方案要清空所有模块吗？
 
-## YukiZygisk 是否保证兼容所有模块？
+保留配置与恢复镜像，不要先清空模块目录，再按 [KernelSU](/guide/switch/kernelsu/)、[Magisk](/guide/switch/magisk/)或 [APatch](/guide/switch/apatch/)的路径迁移，逐项验证后端与模块。
 
-不保证。API 对上只是第一关，Android 版本、ABI、目标进程和模块自己的写法都可能出问题。管理器看到“已加载”，也只能说明库进去了，不能替模块证明功能正常。
+## 隐藏功能能保证通过检测吗？
 
-## YukiZygisk 为什么进入安全模式？
+不能。属性视图、UTS、挂载清理或 SELinux Hide 都有明确作用范围，不等于重新锁定 bootloader，也不改变远端认证或硬件证明结果。
 
-内核按 Zygote socket name 记录 PID；同名 Zygote 的 PID 更替累计达到 3 次后，YukiZygisk 会进入全局注入安全模式。这个计数证明发生了进程代际更替，不能单独证明死因或责任模块。先导出触发前后的持久化诊断，再按[功能与状态](/yukizygisk/features/)核对。
+## 开不了机时怎么办？
 
-## App Profile 是 YukiSU 独有的吗？
-
-不是，官方 KernelSU 也提供 App Profile。YukiSU 在自己的内核、用户空间和管理器中维护对应实现。配置 UID、capabilities、SELinux domain 或 namespace 时应按当前 YukiSU 行为验证。
-
-## 更新管理器后是否必须立刻更新 LKM？
-
-不一定。APK、设备里的 `ksud`、LKM、安装布局和模块不是同一个东西。先看发布说明到底改了哪一层；主页可单独同步 `ksud`，内核或早启动修复才需要重新走 LKM 修补。跨越 UAPI 或启动布局变化时，也别假设旧组合一定兼容。
-
-## OTA 后应该怎么处理？
-
-先确认设备是否 A/B、OTA 是否已经完成、当前与未使用槽位分别是什么。管理器会从未使用槽位 `boot` 读取目标 KMI；Ramdisk 模式按目标布局选分区，ImgPatch 只写目标槽位的 `boot`。不要在 OTA 状态不明确时猜槽位，也不要用旧固件镜像修补新槽位。
-
-## YukiSU 能保证通过完整性或 Root 检测吗？
-
-不能。检测结果还受 bootloader、ROM、模块和目标应用策略影响。某个隐藏开关在你手机上有效，不代表它是万能通行证。
-
-## 遇到问题应该先发什么？
-
-别只发一句“不能用”。至少带上设备构建指纹、内核与 KMI、LKM/管理器/`ksud` 状态（完整性不匹配时保留已安装侧“未知”）、分区和槽位、模块列表、最后一次改动，以及**第一条**有效错误。YukiZygisk 问题直接导出管理器诊断。模板见[如何有效提问](/troubleshoot/asking/)。
+区分镜像/LKM、普通模块和 preinit 问题，使用[救砖与恢复](/guide/rescue-bootloop/)的对应步骤。反馈时保留完整版本、分区/槽位、最后一次改动和第一条有效错误，见[如何提问](/troubleshoot/asking/)。

@@ -5,11 +5,11 @@ title: Compatibility
 
 # Compatibility
 
-YukiSU support has three independent layers: the Android userspace version, the kernel model, and an LKM compatible with the target kernel. Meeting only one of them does not make a device supported.
+Your device must meet every requirement below and use an LKM built for the target kernel.
 
-## Supported boundary
+## Supported devices
 
-Current `main` requires:
+Device requirements:
 
 - Android 12 (API 31) or newer;
 - an ARM64 device;
@@ -18,11 +18,11 @@ Current `main` requires:
 - `CONFIG_KPROBES=y`, `CONFIG_KRETPROBES=y` and `CONFIG_HAVE_SYSCALL_TRACEPOINTS=y`;
 - an LKM compatible with the target kernel's KMI, vermagic, symbol versions and configuration.
 
-Android 11 and older, GKI 1.0, non-GKI, ARM32, x86_64 and built-in `CONFIG_KSU=y` are outside YukiSU's supported scope. Compiling the source against one unusual tree does not by itself turn that kernel into an officially supported target.
+Android 11 and older, GKI 1.0, non-GKI, ARM32, x86_64 and built-in `CONFIG_KSU=y` are outside YukiSU's supported scope. Use another root solution on these devices; do not force-load a YukiSU LKM.
 
-## Current CI and full-build KMI set
+## KMIs included in v1.8.0
 
-Repository scripts and CI currently maintain eight DDK targets:
+The [v1.8.0 release](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.8.0) provides LKMs named `<KMI>_kernelsu.ko` for these eight targets. Full repository builds use the same set:
 
 | KMI target | GKI generation |
 | --- | --- |
@@ -40,7 +40,7 @@ This is a **build-target matrix**, not a direct mapping from the installed Andro
 An official full Manager build packages all eight LKMs as `ksud` resources. A local single-target build made with `scripts/build.* -k <KMI>` contains only that target. If no bundled asset matches, the manager can accept a device-specific `.ko`; that does not waive kernel ABI requirements.
 
 ::: warning Linux 5.10+ is not a universal-module promise
-Two kernels labelled `android14-6.1` may still differ in exported symbols, module signing, vermagic or vendor configuration. CI LKMs define the maintained standard-GKI build surface, not a guarantee for every vendor kernel.
+Bundled LKMs target standard GKI. If a vendor changes exported symbols, signing requirements, vermagic, or kernel configuration, use an LKM built for that kernel instead of force-loading a bundled one.
 :::
 
 ## Pre-install checks
@@ -64,9 +64,9 @@ Also verify separately:
 
 See [Installation and image modes](/en/guide/install-modes/), [Build guide](/en/dev/build/) and [Kernel integration](/en/dev/integration/) for the next steps.
 
-## Sources of truth
+## Source code
 
-- [Local/CI KMI matrix](https://github.com/Rouyashiki/YukiSU/blob/main/.github/workflows/build-lkm.yml)
-- [Windows full-build script](https://github.com/Rouyashiki/YukiSU/blob/main/scripts/build.ps1)
-- [Linux/macOS full-build script](https://github.com/Rouyashiki/YukiSU/blob/main/scripts/build.sh)
-- [Compile-time API 31 userspace floor](https://github.com/Rouyashiki/YukiSU/blob/main/userspace/common/api_floor.hpp)
+- [Local/CI KMI matrix](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/.github/workflows/build-lkm.yml)
+- [Windows full-build script](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/scripts/build.ps1)
+- [Linux/macOS full-build script](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/scripts/build.sh)
+- [Compile-time API 31 userspace floor](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/common/api_floor.hpp)

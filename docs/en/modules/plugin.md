@@ -5,10 +5,10 @@ title: Lua plugins
 
 # Lua plugins
 
-The Lua plugin system is now merged into YukiSU `main`; it is no longer a development-branch placeholder. The current `ksud` embeds Lua 5.5.1, while the manager provides installed-plugin listing, local ZIP installation, repository browsing, enable/disable controls, configuration, quick actions and logs.
+Lua plugins run under `ksud` using embedded Lua 5.5.1. The manager provides installed-plugin listing, local ZIP installation, repository browsing, enable/disable controls, configuration, quick actions and logs.
 
 ::: warning Privileged code
-Plugin callbacks run from `ksud` as root. Resource limits, ZIP path validation and isolated workers contain some failures, but they are not a permission sandbox. Review a plugin like a native root program, not like an ordinary webpage script.
+Plugin callbacks run as root and can access system files and start processes. Install plugins only from trusted sources and read their source code first. Memory, time and ZIP limits do not restrict their root permissions.
 :::
 
 ## Different from modules and WebUI
@@ -16,10 +16,13 @@ Plugin callbacks run from `ksud` as root. Resource limits, ZIP path validation a
 | Type | Installed at | Entry | Main activation |
 | --- | --- | --- | --- |
 | Ordinary module | `/data/adb/modules/<id>/` | Shell scripts, file trees and native libraries | Boot stages, Action and process creation |
+| One-shot script | Temporary manager extraction directory | `action.sh` and optional parameter form | One manual run, followed by cleanup |
 | Module WebUI | `webroot/` inside an ordinary module | `index.html` | When the user opens it |
 | Lua plugin | `/data/adb/plugins/<id>/` | Lua file selected by `plugin.json` | `ksud` lifecycle callback or manual operation |
 
-Lua plugins do not pass through MetaModule. A `.so` inside a plugin is not a Native ZN module and does not use `zn_modules.txt`. Lua C extensions are loaded by Lua `require`/`package.cpath` inside the plugin worker; Native ZN injects a different target process and has a separate ABI and lifecycle.
+`ksud` runs Lua plugins directly, without MetaModule. Lua C extensions load into the plugin worker through `require`/`package.cpath`. To inject code into another native process, use [Native ZN](/en/yukizygisk/native-zn/).
+
+For a single ZIP operation without a persistent plugin, use a [one-shot script](/en/modules/one-shot/). Immediate plugin-directory updates are separate from ordinary modules' [hot-install protocol](/en/modules/hot-install/).
 
 ## Minimal package
 
@@ -39,11 +42,11 @@ example-plugin.zip
   "author": "Example author",
   "description": "A minimal lifecycle plugin",
   "entry": "main.lua",
-  "callbacks": ["post_fs_data", "post_mount", "service", "boot_completed", "action"]
+  "callbacks": ["post_mount", "action"]
 }
 ```
 
-`id` is required and may contain letters, digits, dots, underscores and hyphens. `entry` defaults to `main.lua` and currently accepts only a safe single filename. The entry script must return a table:
+`id` is required and may contain letters, digits, dots, underscores and hyphens. `entry` defaults to `main.lua` and accepts a single filename, not a directory path. The entry script must return a table:
 
 ```lua
 return {
@@ -58,13 +61,13 @@ return {
 }
 ```
 
-`callbacks` is manifest/UI metadata; it does not register functions with the runtime. Stage dispatch still looks for a real function of that name in the table returned by the entry. Declaring `action` or `has_action=true` without returning an `action` function therefore produces a failed click.
+After declaring a callback in `callbacks`, implement the matching function in the table returned by the entry script. `has_action=true` also requires an `action` function; otherwise clicking the action returns an error.
 
-Every callback creates a memory-limited Lua state, loads the entry and looks up the requested function again. Do not rely on Lua globals persisting across callbacks; store durable state in plugin configuration or an explicit data file.
+Each callback creates a new Lua state and reloads the entry. Store state shared across callbacks in plugin configuration or a data file; Lua globals do not persist.
 
 ## `plugin.json` fields
 
-In addition to name, version, author, description, license and entry metadata, the current manifest supports:
+In addition to name, version, author, description, license and entry metadata, the manifest supports:
 
 - `min_version`: minimum `ksud` version code;
 - `depends`: plugin ID array; dependencies must be installed and enabled and execute in topological order;
@@ -75,9 +78,9 @@ In addition to name, version, author, description, license and entry metadata, t
 
 Installation and state changes validate dependencies. `ksud` refuses to disable or uninstall a plugin while another enabled plugin depends on it, and dependency cycles never enter the execution queue.
 
-## Lifecycle and reboot boundaries
+## Lifecycle and reboots
 
-| Callback | Source | Current behavior |
+| Callback | Source | Execution |
 | --- | --- | --- |
 | `post_fs_data` | Normal `post-fs-data` | After ordinary early scripts; blocking, 120-second limit per run |
 | `post_mount` | Normal `post-mount` | After ordinary module scripts; blocking, 120-second limit per run |
@@ -86,15 +89,15 @@ Installation and state changes validate dependencies. `ksud` refuses to disable 
 | `action` or another manual callback | Manager/`ksud plugin run` | Blocking, 300-second limit per run |
 | `main` | Automatically detected at service stage | Starts as a managed daemon callback at a one-second interval |
 
-`start_daemon("callback", seconds)` starts another managed periodic callback. Disabling or uninstalling a plugin stops daemons owned by that plugin; do not replace this with an untracked background process that cannot be attributed or reaped.
+Use `start_daemon("callback", seconds)` for periodic tasks. `ksud` manages the task and stops it when the plugin is disabled or uninstalled.
 
-Installing or updating the plugin directory itself needs no reboot. Updates preserve `config.json`, `last_output.log` and the disable marker. Boot callbacks that have already passed are not replayed, however, so verify `post_fs_data` and `post_mount` on the next normal boot.
+Installing or updating the plugin directory itself needs no reboot. Updates preserve `config.json`, `last_output.log` and the disable marker. Installation does not replay completed boot stages. Fully reboot after updating callbacks such as `post_fs_data` or `post_mount`. An eligible [emulated soft reboot](/en/manager/soft-reboot/) also dispatches these stages again; make callbacks repeatable to avoid duplicate services or rules.
 
-The current late-load path does not replay Lua plugin `post_fs_data` or `post_mount`. Later `service` and `boot_completed` callbacks are still dispatched. A feature requiring real early boot cannot treat late-load as an equivalent event.
+Late-load dispatches later `service` and `boot_completed` callbacks without replaying `post_fs_data` or `post_mount`. Use normal boot loading for plugins that need early callbacks.
 
 System safe mode skips plugin callbacks but does not write persistent `disable` markers under `/data/adb/plugins/`. This differs from how ordinary modules are disabled.
 
-## Current Lua API
+## Lua API
 
 The entry can call these globals directly:
 
@@ -117,25 +120,25 @@ The runtime also exposes:
 - `PLUGIN_DIR`: active plugin directory, suitable for configuration and data;
 - `PLUGIN_CODE_DIR`: locked code snapshot for this run, suitable for `require` and read-only assets.
 
-`exec` does **not** invoke a shell: every value is a separate program argument. This avoids shell concatenation by default, but a plugin that explicitly runs `sh -c` owns all quoting and validation. The standard Lua libraries are also open, so the argument checks above must not be mistaken for privilege isolation.
+`exec` does **not** invoke a shell: every value is a separate program argument. If you use `sh -c`, validate and quote all dynamic values. The standard Lua libraries are available and also run with root privileges.
 
-Each Lua state is limited to 64 MiB. Command output, file reads and JSON input have separate limits. A timeout or size failure is recorded in `last_output.log`; limits do not make a dangerous operation trustworthy.
+Each Lua state is limited to 64 MiB. Command output, file reads and JSON input have separate limits. Timeout and size failures are recorded in `last_output.log`.
 
-The source contract is defined by [`plugin.hpp`](https://github.com/Rouyashiki/YukiSU/blob/main/userspace/ksud/src/plugin/plugin.hpp), [`plugin.cpp`](https://github.com/Rouyashiki/YukiSU/blob/main/userspace/ksud/src/plugin/plugin.cpp) and [`lua_engine.cpp`](https://github.com/Rouyashiki/YukiSU/blob/main/userspace/ksud/src/plugin/lua_engine.cpp).
+The source contract is defined by [`plugin.hpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/plugin.hpp), [`plugin.cpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/plugin.cpp) and [`lua_engine.cpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/lua_engine.cpp).
 
-## Repositories and trust
+## Plugin repositories
 
 The manager includes a non-removable but disableable **FolkPatch Plugin Mirror** source. Users can add custom sources, change priority and cache each catalog. Remote sources require HTTPS; HTTP is accepted only for loopback development.
 
-Repository entries currently carry metadata and a download URL, not a publisher signature or a content hash bound to the catalog entry. HTTPS, ZIP size limits, path/symlink rejection and atomic directory replacement protect transport and installation mechanics, but do not prove the author's identity. Review the source, final download target and maintainer before installation.
+Repository entries contain plugin metadata and a download URL. They include neither a publisher signature nor a bound content hash. Inspect the final download URL and source code before installing, and use a maintainer you trust.
 
 The installer accepts root-level or one-wrapper archives and rejects encryption, unsupported ZIP entries, symlinks, duplicate/escaping paths and packages over its limits. An update waits for active callbacks to leave; it will not forcibly exchange a busy code tree.
 
 ## Troubleshooting order
 
-1. Check that the manifest is valid, the plugin is enabled and dependencies have no error.
-2. Distinguish a callback whose stage has not occurred from one that failed.
-3. Read the plugin log instead of relying only on a quick-action toast.
-4. For a long-running service, verify that its daemon is managed and stops on disable.
-5. Do not expect `post_fs_data`/`post_mount` in late-load mode.
-6. For Lua C extensions, separately verify the YukiSU device ABI and dynamic dependencies.
+1. Enable the plugin and resolve manifest or dependency errors shown on its card.
+2. Fully reboot after updating boot callbacks; run manual callbacks through their action button.
+3. Open the plugin log and inspect exit codes, timeouts and loading errors.
+4. Use managed daemons for periodic tasks and test that disabling the plugin stops them.
+5. Switch to normal boot loading when late-load is missing a required early callback.
+6. For Lua C extension load failures, check the device ABI and dynamic dependencies.

@@ -16,4 +16,4 @@ Do not copy a generic `fastboot flash boot` command without confirming the parti
 
 For ImgPatch, input must be a restored stock `boot` containing the ARM64 kernel. `boot-patch-v2` refuses automatic cleanup when it detects a Magisk Ramdisk instead of stacking both boot injection layouts. See [Installation and image modes](/en/guide/install-modes/) for the Ramdisk/ImgPatch boundary.
 
-Magisk module layouts may look similar, but system-file mounting in YukiSU depends on an external MetaModule. Reuse a module only when its author declares compatibility.
+Magisk modules can depend on Magisk-specific installer commands or mounting behavior. YukiSU mounts files through built-in Kagami or an enabled external MetaModule. Reuse modules whose authors support KernelSU/YukiSU; do not copy the entire Magisk module directory into YukiSU.

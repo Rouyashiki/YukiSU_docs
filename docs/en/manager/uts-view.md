@@ -22,8 +22,8 @@ The page controls six UTS fields independently:
 
 Each field has its own switch. A selected value must be non-empty and no more than 64 UTF-8 bytes. The limit is bytes, not displayed characters.
 
-::: warning This is not general hiding
-Changing `release` or `machine` affects only observation paths using that UTS view. Apps can still obtain signals from boot properties, files, kernel interfaces, hardware traits, and behavior. Incorrect values can also make installers, modules, or diagnostic scripts select the wrong compatibility path.
+::: warning Keep the original kernel identity
+Changing `release` or `machine` changes UTS query results only. Boot properties, files, and other kernel interfaces still expose their own information. Installers, modules, or diagnostic scripts that use the changed value for compatibility checks will select paths using that value. Use the saved original identity when downloading an LKM or troubleshooting.
 :::
 
 ## Three configuration targets
@@ -35,6 +35,8 @@ Changing `release` or `machine` affects only observation paths using that UTS vi
 | Boot global | Global identity established early from the LKM on the next boot | Repatch, flash the correct slot, then fully reboot | Locks the global identity for that boot, so runtime global cannot override it |
 
 Runtime global and denylist scope can be active together; the status then reads “Global + denylist scoped.”
+
+Denylist scope has no separate package list. Ordinary apps enter it according to their [Non-root Profile module-unmount policy](/en/manager/app-profile/); root apps and managers are excluded, while isolated processes are included separately. All eligible new processes share one denylist template. A process that already owns a private UTS namespace is skipped.
 
 ## Reading status
 
@@ -57,14 +59,14 @@ The page shows both:
 - the original identity captured by the kernel; and
 - the effective global identity.
 
-“Original identity valid” means the kernel retained a usable snapshot for diagnosis and KMI selection. On a new kernel that supports UTS View, installation refuses automatic KMI detection when original `release` is unavailable rather than guessing from modified `uname` output.
+“Original identity valid” means the kernel retained a snapshot for diagnosis and KMI selection. When the LKM supports UTS View but original `release` is unavailable, installation refuses automatic KMI detection. Identify the KMI from the target stock boot image and select it manually.
 
 ### Late capture and coverage gaps
 
-- **Original identity captured late:** early coverage cannot be guaranteed.
+- **Original identity captured late:** the LKM loaded after system startup. The original snapshot comes from load time and cannot reconstruct earlier identity or tasks.
 - **Runtime coverage gaps:** some tasks already own private UTS namespaces and cannot receive the runtime-global update.
 
-These are scope warnings, not errors to clear by toggling repeatedly. Use a validated boot-global configuration and a full reboot when consistent early coverage is required.
+Runtime updates cannot change existing private namespaces. To establish global identity from startup, configure a boot-global template, repatch, and fully reboot.
 
 ## How boot-global configuration reaches the LKM
 
@@ -73,28 +75,28 @@ The page first stores a local draft and stages a pending patch configuration. �
 - The traditional ramdisk path encodes the template as LKM startup parameters.
 - ImgPatch writes it into the LKM's 512-byte ImgPatch configuration block.
 
-A configuration token tracks whether the current draft matches the most recent patch. Leaving with unpatched changes prompts for repatching. A damaged staging file or invalid template blocks patching instead of being ignored.
+Leaving with unpatched changes prompts for repatching. A damaged staging file or invalid template blocks patching. Return to UTS View, correct the fields, and save again before retrying.
 
-::: danger A successful patch is not an active configuration
-Generating output produces only a file; direct install writes a partition. In either case, verify the target firmware, correct `boot`/`init_boot` partition, and slot. Then fully reboot and check source, lock state, and effective identity on this page.
+::: important Fully reboot after installation
+If patching a file, flash the output to the target firmware's correct `boot`/`init_boot` partition and slot. If installing directly, confirm completion and fully reboot. Return to UTS View, confirm the source is Early boot and Boot locked is Yes, then inspect the effective identity.
 :::
 
-## Recommended workflows
+## Workflows
 
-### Test one app
+### Test an app's denylist view
 
-1. Select Denylist scoped.
-2. Enable only required fields and enter values.
-3. Fully stop the target app after saving.
-4. Restart it and read `uname` from the same process context.
-5. Preserve both original identity and the target process result.
+1. Open the target app in Superuser, leave root ungranted, and enable module unmount in its custom Non-root Profile. With global Kernel Umount enabled, this also changes its module visibility.
+2. Return to UTS View, enable Denylist scoped, and enter values for only the fields you need.
+3. Save, fully stop the target app, and restart it.
+4. Read `uname` inside the target process; a terminal app's result is not a substitute.
+5. Preserve both original identity and the target process result, and check other apps using the same template.
 
 ### Change as much of the live system as possible
 
 1. Record Original identity valid and the current effective identity.
 2. Use Runtime global.
 3. Check whether the page reports coverage gaps.
-4. Do not misclassify old values in existing private namespaces as a save failure.
+4. Processes with existing private namespaces retain old values. To update them, use a boot-global template and fully reboot.
 
 ### Cover early boot
 
@@ -114,4 +116,8 @@ Disabling boot-global mode also requires repatching and rebooting. A page switch
 - KMI parsed from the actual boot image; and
 - the last patch's target partition, slot, and Working mode.
 
-Do not report only `uname -a`. With UTS View enabled, that may be the output intentionally designed to change.
+Include both the original identity and `uname -a` from the target process. The latter shows the UTS view that process actually uses.
+
+## Source references
+
+[UtsViewScreen.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/UtsViewScreen.kt), [uts_view.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/extension/uts_view.c), and [Non-root policy](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/policy/allowlist.c).

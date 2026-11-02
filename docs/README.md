@@ -6,7 +6,7 @@ config:
     hero:
       name: YukiSU
       text: 为 Android 12+ ARM64 GKI 设备打造的现代 Root 方案
-      tagline: 上游生态照常用，新的东西也不缺
+      tagline: v1.8.0 · 内置模块挂载、YukiZygisk 与完整管理工具
       image:
         src: /YukiSU-mini.svg
         alt: YukiSU
@@ -25,15 +25,15 @@ config:
         link: /guide/intro/
       - title: 清晰的技术路线
         icon: 🧭
-        details: 只做 Android 12+、ARM64 GKI 2.0 与 LKM；当前发布构建覆盖 5.10 到 6.18 的八组 KMI。
+        details: 只做 Android 12+、ARM64 GKI 2.0 与 LKM；当前完整构建覆盖 5.10 到 6.18 的八组 KMI。
         link: /guide/yukisu-vs-kernelsu/
       - title: 现代 C++ 用户空间
         icon: ⚙️
-        details: ksud、ksuinit 与 su 都用 C++ 重写，不是给上游二进制换个壳继续用。
+        details: ksud（含 su）与 ksuinit 使用 C++，维护自己的安装、模块与诊断实现。
         link: /guide/features/
       - title: 灵活模块挂载
         icon: 🧩
-        details: MetaModule 跟随上游公开契约，挂载后端可以自己选；现有模块仍需核对设备、版本与后端要求。
+        details: 内置 Kagami 提供挂载，外部 MetaModule 可优先接管；Kasumi 提供内核视图能力。
         link: /modules/meta-module/
       - title: 安全认证
         icon: 🔐
@@ -41,7 +41,7 @@ config:
         link: /manager/superkey/
       - title: 完整管理体验
         icon: 🛠️
-        details: 授权、Feature、镜像修补/恢复、模块、Lua 插件、分区备份和 Ramdisk 工具都在管理器里。
+        details: 统一的 Material 3 Expressive 界面，集中管理授权、启动配置、模块、AVB 与 Ramdisk 编辑。
         link: /manager/overview/
       - title: YukiZygisk 加持
         icon: 🧬

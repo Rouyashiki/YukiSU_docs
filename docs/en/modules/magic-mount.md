@@ -5,55 +5,84 @@ title: Module mounting
 
 # Module mounting
 
-YukiSU does not include a fixed Magic Mount backend. During normal boot, `ksud` calls the active MetaModule's `metamount.sh` after ordinary-module `post-fs-data.sh`, Lua plugin `post_fs_data` callbacks and `system.prop`. That backend decides how `/data/adb/modules/` is processed.
+YukiSU uses built-in Kagami for module system files by default; no separate mounting module is required. It supports OverlayFS, Magic Mount and explicitly selected Kasumi. An enabled external [MetaModule](/en/modules/meta-module/) with `metamount.sh` takes ownership and skips built-in mounting.
 
-Core YukiSU therefore does not promise that a backend:
+Kagami arranges mounts in userspace; Kasumi provides kernel file mappings. Before using Kasumi, inspect kernel support and the protocol version in the manager. Built-in Kagami does not automatically load an external Kasumi LKM.
 
-- always uses bind mounts or OverlayFS;
-- exactly reproduces Magisk Magic Mount conflict, whiteout or replacement semantics;
-- accepts every Magisk module unchanged;
-- exposes an ordinary module's `system/` without MetaModule;
-- makes the same mounts visible in every app namespace.
+## Modes and defaults
 
-“MetaModule required” means that a module has files to mount but no active backend is available. Select a MetaModule suitable for the Android release, kernel and module, then validate it using its own documentation. See [MetaModule](/en/modules/meta-module/).
+| Mode | Selection rule |
+| --- | --- |
+| `auto` | Use OverlayFS when suitable, otherwise Magic Mount; no mounting when both are unavailable/disabled |
+| `overlay` | Use enabled, kernel-supported OverlayFS, otherwise use fallback selection |
+| `magic` | Use enabled Magic Mount, otherwise use fallback selection |
+| `kasumi` | Use Kasumi only when explicitly selected, enabled and protocol-compatible; otherwise fall back to OverlayFS/Magic Mount |
+| `none` | Do not mount the module's files; ordinary lifecycle scripts are not disabled by this mode |
 
-## Mounts, scripts and injection are separate
+Built-in mounting defaults to enabled, with global mode `auto`. **`auto` does not automatically prefer Kasumi.** Automatic selection also checks module layout: for example, replacing files directly at a partition root selects Magic Mount rather than forcing OverlayFS.
 
-- YukiSU dispatches `post-fs-data.sh`, `service.sh` and other scripts.
-- MetaModule mounts the `system/` tree.
+Fallback selection happens before mounting. If the selected backend fails while mounting, it reports failure without automatically retrying the module through another backend.
+
+A global mode other than `auto` overrides per-module modes. With global `auto`, individual module settings apply. Module cards can show configured modes and selected strategies, edit module rules and check file conflicts. These built-in mount controls do not apply when an external backend owns mounting or built-in mounting is disabled.
+
+## When changes take effect
+
+After saving a mode, updating system files or changing module state, a full reboot builds a new mount plan. Eligible devices can also use an [emulated soft reboot](/en/manager/soft-reboot/) to remove the old plan, apply updates and mount again. It restarts Android userspace without running preinit or reparsing module init rc.
+
+An ordinary post-boot Kasumi refresh only replays modules recorded in this boot's mapping plan. It cannot add an entirely new module. Use a full reboot for new modules, or an emulated soft reboot after checking its requirements.
+
+[Hot installation](/en/modules/hot-install/) switches the active directory without remounting. The new mount plan skips modules marked `skip_mount`, `disable` or `remove`, and modules set to `none`.
+
+## Mounting, scripts and injection
+
+- `ksud` dispatches `post-fs-data.sh`, `service.sh` and other scripts;
+- Built-in Kagami or an external MetaModule handles trees such as `system/`;
 - YukiZygisk handles `zygisk/*.so` and `zn_modules.txt`.
 
-If scripts succeed but system files do not appear, inspect MetaModule. If files appear in a shell but not one app, inspect that app's namespace and unmount policy. If a Zygisk module has no effect, diagnose YukiZygisk instead of replacing the mount backend.
+If scripts succeed but files are missing, inspect the mount plan. If system paths are visible but an app cannot see them, inspect views and namespaces. If Zygisk has no effect, inspect injection status.
 
-## Per-app unmount
+## Per-app unmounting and WebView
 
-After mounts are established, the YukiSU kernel can still unmount module paths according to root profiles while an app is derived from Zygote. This happens in the app's own namespace; it is not another MetaModule installation or mount pass.
+The kernel can unmount module mounts in a Zygote child's own namespace according to its root profile. When files are missing inside an app, inspect that app PID's namespace rather than only the root shell.
 
-A shell, manager, ordinary app and isolated process can therefore expose different mountinfo. Always name the PID/namespace used for verification. A result from the init namespace does not prove visibility to every app.
+v1.8.0 moves WebView unmounting into app profiles. Open **WebView Zygote** (UID 1053) in the superuser list and inspect its “Unmount modules” setting; there is no separate global WebView switch. When enabled, its descendants inherit the unmounted view and cannot read the removed WebView resource, library or configuration replacements. Disable unmounting for this entry when your module depends on those replacements, then fully reboot. This setting does not control Zygisk callbacks. See [App profiles](/en/manager/app-profile/).
 
-## WebView Zygote
+YukiZygisk denylist modes also use per-app unmount results. Disabled mode adds no injection restriction; Enforce skips ordinary Zygisk injection for targets; Restore retains injection while preserving ordinary-module unmounting. Zygisk modules must clean up their own private mounts.
 
-“Unmount modules for WebView” is a separate kernel feature and is off by default. When enabled, the UID 1053 WebView Zygote receives a namespace with ordinary module mounts removed; descendant WebView sandbox processes inherit that view.
+## Kasumi rules and ordinary hiding
 
-The benefit is reduced module-mount visibility from WebView processes. The explicit cost is that modules replacing WebView resources, libraries or configuration may stop working. Reboot after a change so a new WebView Zygote and its children inherit consistent state.
+v1.8.0 uses Kasumi API 18. The built-in backend uses it only when the kernel protocol matches and Kasumi is enabled. This does not change the OverlayFS/Magic Mount selection used by `auto`.
 
-This feature is not YukiZygisk and does not decide whether Zygisk callbacks run.
+Kasumi module mappings can bypass policy:
 
-## YukiZygisk denylist and private mounts
+- By default, bypass is off and rules follow Kasumi's access policy.
+- Enabling module-level bypass makes all of that module's Kasumi rules global.
+- Enabling rule-level bypass affects only that ADD, MERGE or HIDE rule. A rule cannot opt out while module-level bypass is on.
+- Bypass changes neither OverlayFS nor Magic Mount rules and does not grant root access.
 
-YukiZygisk denylist mode combines with YukiSU's per-app unmount result to decide whether ordinary Zygisk modules run in a target app:
+Keep the default when limiting which processes see module content. Enable bypass only for rules that must apply globally. See [Kasumi settings](/en/manager/kasumi/) for UID policy, shared/isolated views and user hide rules.
 
-- Off: the denylist does not add a YukiZygisk injection decision.
-- Force: unmount ordinary module mounts and skip Zygisk module injection for the target.
-- Restore: keep Zygisk injection while retaining the ordinary-module unmount result.
+Mount hiding now has a single ordinary toggle, disabled by default; aggressive hiding has been removed. Hiding mount records does not restore original files for an app, so it cannot replace app-profile unmounting. SELinux Guard defaults to off and provides experimental compensation for context-write timing. It does not disable SELinux or replace a module's required `sepolicy.rule`.
 
-Integrated YukiZygisk does not scan and remove mounts that a Zygisk module itself creates in the app's private namespace after specialization. The creating module owns those mounts and their lifecycle; they are not MetaModule system-file mounts.
+## Diagnosis and recovery
 
-## Minimal verification
+For a mount failure, query the backend, configuration, module strategies and recovery status from a root shell:
 
-1. Enable one file-mount module with an obvious result.
-2. Confirm that `disable`, `remove` and `skip_mount` are absent.
-3. Confirm that the single MetaModule completes `post-fs-data.sh` and `metamount.sh`.
-4. Reboot, then inspect from both an init/root shell and the target app namespace.
-5. If only WebView loses visibility, check the WebView Zygote unmount feature.
-6. Disable the test module, reboot again, and confirm that the target file disappears.
+```sh
+ksud kagami api meta
+ksud kagami api backends
+ksud kagami config show
+ksud kagami module list --all
+ksud kagami module check-conflicts
+ksud kagami recovery status
+```
+
+Conflict checks list modules replacing the same path. Disable conflicting modules, inspect the strategy selected in `module list --all`, then fully reboot and check the file inside the target app.
+
+Kagami mount recovery and module preinit use separate counters. When Kagami protection triggers, repair the failing module or mount configuration, then use Kagami's recovery control. `ksud module preinit reset` resets only preinit.
+
+If the cause remains unclear, enable one simple file module, fully reboot and inspect its file. Then disable the module, reboot and check that the original file is restored.
+
+Source references: [built-in entry](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/embedded.cpp), [mode selection and mount plans](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/mount/backend.cpp), [defaults](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/include/kagami/config.hpp), [manager controls](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/util/KasumiManager.kt).
+
+Rule implementation: [Kasumi](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/mount/kasumi.cpp).

@@ -9,7 +9,7 @@ Include the device model, Android version, build fingerprint, complete `uname -r
 
 Give the shortest reproduction from a clean boot, expected and actual results, the last known-good state, and the single change made before failure. Save or share the manager bugreport and attach the complete installation output when relevant. For module issues, include the module ID/version, MetaModule state, YukiZygisk status, target process, module type, and ABI.
 
-Add issue-specific evidence:
+Include the logs and state for your issue:
 
 | Problem | Also include |
 | --- | --- |
@@ -26,6 +26,16 @@ Before filing:
 3. search [GitHub Issues](https://github.com/Rouyashiki/YukiSU/issues)
 4. remove SuperKeys, personal paths, accounts, package lists, and unrelated private data
 
-“It does not work,” a “loaded” label, or screenshots alone are not enough for diagnosis. A manager bugreport can include properties, processes, packages, mounts, kernel data, and YukiZygisk diagnostics; review it before sharing.
+Describe the operation and the step that failed. Attach the first error and surrounding text logs; use screenshots to show the UI state. A manager bugreport can include properties, processes, packages, mounts, kernel data, and YukiZygisk diagnostics; review it before sharing.
 
 Support: [GitHub Issues](https://github.com/Rouyashiki/YukiSU/issues) · [Telegram](https://t.me/manosaba)
+
+## Additional logs for module and runtime issues
+
+| Area | Include |
+| --- | --- |
+| Mounting | Kagami/external MetaModule, actual backend, target namespace and unmount settings |
+| Hot installation | Module request, current mode, full installer/script output, directory-switch state |
+| Preinit | Kernel support, preparation status, failed-boot count, early logs, last full reboot |
+| One-shot script | Source/version, redacted parameters, exit code, run history |
+| YukiZygisk | Load policy, target/PID, injection outcome, exit evidence, isolation and daemon recovery state |

@@ -5,66 +5,84 @@ title: Feature controls
 
 # Feature controls
 
-The current manager places formal kernel Features under “Settings → Feature controls.” IDs come from [`uapi/feature.h`](https://github.com/Rouyashiki/YukiSU/blob/main/uapi/feature.h): 0–99 are the upstream-compatibility reserved range, while explicitly numbered YukiSU extensions start at 100.
+Open “Settings → Feature controls.” YukiSU defines 13 Features: `0–4`, `6`, and `101–107`. The su mode selector coordinates IDs 0, 105, and the related 101; other features use their page controls.
 
-There are currently 11 entries, not the older 0–4 and 100–103 set.
+## Support, current values, and boot locks
 
-## How the page reads and writes state
+The manager reads support, live values, and forced flags from the running kernel. Unsupported features are disabled on older LKMs; updating the APK does not add features to an old kernel.
 
-The manager reads support and the live value directly from the **running kernel** over ioctl. If an older LKM does not implement an ID, that switch is disabled as unsupported. A visible row does not establish kernel support.
+Normal changes go through `ksud` to set and persist the value, with rollback attempted on failure and actual state read back afterward. sulog, Magisk compatibility, and YukiZygisk also require daemon or boot-state handling, so calling a kernel setter alone is not equivalent.
 
-On change, the manager asks `ksud` to set the runtime value and persist the feature configuration. If persistence fails, it attempts to restore the previous runtime value and save again. sulog, Magisk compatibility, and YukiZygisk also require daemon or boot-snapshot side effects owned by `ksud`; a kernel setter alone is not an equivalent configuration path.
+Features **forced on or off by boot configuration** appear locked and reject runtime changes. To unlock one, choose “Not locked” during installation, repatch and flash the target image, then fully reboot. Reinstalling the APK or clearing its data cannot unlock it. See [Boot configuration](/en/manager/boot-config/).
 
-## The manager's KernelSU group
+## Feature IDs and behavior
 
-The UI places IDs 0–5 on its “KernelSU features” card, but UI grouping is not sufficient attribution. Current official KernelSU `main` exposes IDs 0–4. ID 5, WebView Zygote Umount, is implemented by YukiSU inside the upstream-reserved range and is not currently a feature shared identically by both projects.
+`0–99` is the upstream-compatibility reserved range. Former ID 5 (WebView unmount) and ID 100 (enhanced security) have been removed and remain unused. Do not write old settings for them. Configure WebView unmount through the [WebView Zygote Profile in Superuser](/en/manager/app-profile/).
 
-| ID | UI label | Actual effect | Lifecycle note |
-| --- | --- | --- | --- |
-| 0 | Disable su compatibility | Inverted display of `SU_COMPAT`; when disabled, apps cannot start new elevation through traditional `su` | Existing root processes are not revoked |
-| 1 | Disable kernel umount | Inverted display of `KERNEL_UMOUNT`; disables kernel handling of profile-driven module unmount | Affects module visibility for later app processes |
-| 2 | Superuser logging | Records kernel superuser events and persists them through `sulogd` | The usage-log viewer appears in Settings while enabled |
-| 3 | ADB Root | Runs `adbd` with root privileges | The manager restarts `adbd` after saving, so the current ADB connection may drop |
-| 4 | SELinux hide | Hides YukiSU/KernelSU policy changes from app-facing SELinux probes | The UI explicitly requires a reboot |
-| 5 | Unmount modules for WebView | Removes module mounts before WebView sandbox processes inherit the WebView zygote namespace | Requires global Kernel Umount to remain enabled; reboot required; modules that modify WebView resources may break |
+| ID | Feature | Current behavior and lifecycle |
+| --- | --- | --- |
+| 0 | Traditional su compatibility | The “Traditional” su mode; mutually exclusive with Kasumi su compatibility |
+| 1 | Kernel Umount | Global profile-driven module unmount mechanism; “Disable kernel umount” is an inverted switch |
+| 2 | Superuser logging | Records kernel superuser events, persisted by `sulogd`; enables the usage-log viewer in Settings |
+| 3 | ADB Root | Runs `adbd` as root; the manager restarts it after saving, so reconnect the current ADB session |
+| 4 | SELinux hide | Handles selected app-facing policy observation paths; follow the reboot prompt |
+| 6 | Restrict Shell root to ADB | Adds an ancestry check to an existing shell grant: the chain must contain `adbd` or a YukiSU root-domain process; disabled by default |
+| 101 | Magisk-style authorization prompt | Provides first-use interaction for ungranted apps in Kasumi su mode; App Profile still controls authorization |
+| 102 | Default anti-escape (no-new-privs) | Enabled by default; blocks further YukiSU elevation for default root profiles; custom profiles can decide separately |
+| 103 | YukiZygisk | Master switch for integrated injection; verify Zygote, native targets, and modules after a full reboot |
+| 104 | Unlock Status Hide | Rewrites selected bootloader/verified-boot properties during service; reboot to verify either enabling or disabling |
+| 105 | Kasumi su compatibility | The experimental Kasumi su mode; requires corresponding kernel support and an available Kasumi runtime |
+| 106 | Kasumi | Built-in Kasumi feature switch; distinct from “Built-in mounting”; follow the reboot prompt |
+| 107 | Mount view cleanup | Rebuilds the mount namespace after module unmount and adjusts corresponding visible IDs; restart the target app |
 
-`KERNEL_UMOUNT` is the global mechanism. “Unmount modules” in App Profile and Feature 5 are policies layered on it; disabling the global mechanism prevents either one from performing a kernel unmount by itself.
+Kernel Umount, App Profile's module-unmount policy, WebView unmount, and mount view cleanup are related but distinct controls. Other options cannot replace the global unmount mechanism when it is disabled, and existing app namespaces are not rebuilt automatically.
 
-## YukiSU Features 100–104
+## Upgrade defaults and module ownership
 
-| ID | UI label | Actual effect | Lifecycle note |
-| --- | --- | --- | --- |
-| 100 | Use strict security policy | Blocks elevation outside the YukiSU domain and unauthorized app-UID downgrade | Authorization hardening, not root hiding |
-| 101 | Magisk-style su prompt | Provides visible `su` and a first-use prompt for apps absent from the allowlist, with `msud` support | Manager runs `magisk-compat apply`; follow its reboot prompt when enabling |
-| 102 | Default anti-escape (no-new-privs) | Makes callers still using the default root profile—including manager and shell—block re-escalation by default | Primarily affects subsequent default-profile elevation; custom profiles decide separately |
-| 103 | YukiZygisk | Enables kernel Zygote capture and the integrated YukiZygisk chain | Saves the master state; verify injection after a full reboot |
-| 104 | Unlock Status Hide | Uses built-in resetprop during service stage to rewrite selected bootloader/verified-boot properties to a locked-looking view | Reboot after enabling; reboot after disabling to restore properties already rewritten this boot |
+After upgrading to v1.8.0, `ksud` performs a one-time defaults migration that enables and saves Feature 102, including when an old configuration saved it as disabled. A manual change made after migration is preserved. Existing custom Root Profile flags and SELinux domains are not overwritten by the global default; edit those profiles individually when needed.
 
-### Unlock Status Hide does not relock the device
+A feature marked “Managed by module” cannot be changed directly in Manager or with an ordinary `ksud feature set/set-save` command. Change it through the owning module, or disable that module and reboot before using Feature controls. su compatibility IDs 0, 101, and 105 form a coupled group: a module that owns one controls the group. Related transitions required to disable Kasumi are also restricted. Boot-forced values take precedence over module ownership.
 
-Feature 104 changes an Android property view, including properties such as `ro.boot.vbmeta.device_state`, `ro.boot.verifiedbootstate`, and selected vendor variants. It does not:
+To investigate a difference between saved and current values, query both:
 
-- relock the bootloader;
-- restore the AVB chain of trust;
-- repair a modified boot image; or
-- guarantee bypass of other unlock or root signals.
+```sh
+/data/adb/ksud feature list
+/data/adb/ksud feature get default_no_new_privs
+/data/adb/ksud feature get default_no_new_privs --config
+```
 
-Treat it as soft property rewriting. A displayed `locked` or `green` value is not the real boot-security state.
+Ordinary `get` reads the running kernel. `--config` reads only persisted configuration and prints `Not set in config` when no value is saved. Check `list` for module ownership or boot locks, and whether configuration has been restored, before changing a value.
 
-### Magisk-style prompting does not replace App Profile
+## Three su modes
 
-Feature 101 changes the interaction when an unlisted app first invokes `su`. The Superuser list and [App Profile](/en/manager/app-profile/) still determine the final allow/deny decision and the resulting UID, capabilities, SELinux domain, and namespace.
+| Mode | Meaning |
+| --- | --- |
+| Off | Disables both traditional and Kasumi su entry points; does not revoke existing root processes |
+| Traditional | Uses the traditional compatibility path and disables Kasumi su compatibility and Magisk-style prompting |
+| Kasumi (experimental) | Uses the Kasumi VFS su entry point; supports a custom su path and optional Magisk-style prompting |
 
-### The YukiZygisk switch does not prove injection
+Mode changes persist related Features and attempt to restore the previous state on failure. Forcing `su_compat` at boot also restricts the related mode, path, and prompt controls.
 
-Feature 103 is only the master switch. After reboot, separately inspect kernel injection, Zygote, native-target, and module state on the YukiZygisk page. Safe mode or daemon failure can leave “enabled” different from “injected.”
+The custom su path defaults to `/system/bin/su` and is editable only in Kasumi mode. It must be a valid absolute path with an existing parent directory and must not overwrite an existing file. Update the su path in your tools after changing it; tools that search only the old path will not find the new entry point.
 
-## Changes that deserve extra care
+## Three separate shell settings
 
-- **Disabling su:** the manager may retain driver access, but tools that depend on `su` lose the ability to open new root sessions.
-- **ADB Root:** restarting `adbd` drops transport; prepare another access route for remote-only work.
-- **Strict security / no-new-privs:** tools that depend on re-elevation or UID transitions may stop working.
-- **WebView unmount:** there is a direct trade-off with modules that modify WebView resources.
-- **SELinux and unlock-status hiding:** each covers a defined observation surface, not general root hiding.
+- **Always grant shell root:** an installation-time shell authorization policy.
+- **ADB Root (ID 3):** whether `adbd` itself runs as root.
+- **Trusted shell sessions only (ID 6):** restricts which process chains may use an existing shell grant.
 
-Change one item at a time, record its old value, and honor the UI's reboot requirement. If saving fails, do not trust the switch animation: refresh the page to read the running kernel again and inspect `ksud` output.
+ID 6 neither grants shell access nor enables USB debugging. A UID 2000 shell is rejected when its ancestry contains neither `adbd` nor a YukiSU root-domain process, even if a grant query says it is allowed. Processes detached from the original session and reparented to init must pass the same check.
+
+## What hiding features change
+
+Unlock Status Hide changes a property view, including `ro.boot.vbmeta.device_state` and `ro.boot.verifiedbootstate`. It does not relock the bootloader, rebuild AVB signatures, or repair modified images. A `locked/green` string is not the real boot-security state.
+
+SELinux hiding handles policy queries, Kasumi handles configured file and mount views, and mount view cleanup handles namespaces and visible IDs. Apps can still detect root through other interfaces. See [Kasumi and mount configuration](/en/manager/kasumi/) for details.
+
+Change one item at a time and check actual values and errors after saving. Restart the app or device as required. After enabling YukiZygisk, fully reboot and follow [injection-state checks](/en/yukizygisk/intro/) for Zygote and target processes.
+
+## Source references
+
+[Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/feature.h), [FeatureControlScreen.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/feature/FeatureControlScreen.kt), [SuCompatMode.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/feature/SuCompatMode.kt), [shell_su_adb_only.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/feature/shell_su_adb_only.c).
+
+[Feature persistence and ownership](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp).

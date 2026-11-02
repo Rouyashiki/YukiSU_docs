@@ -6,7 +6,7 @@ config:
     hero:
       name: YukiSU
       text: A modern root experience for Android 12+ ARM64 GKI devices
-      tagline: Keep the upstream ecosystem. Add the good stuff.
+      tagline: v1.8.0 · Built-in mounting, YukiZygisk, and management tools
       image:
         src: /YukiSU-mini.svg
         alt: YukiSU
@@ -29,11 +29,11 @@ config:
         link: /en/guide/yukisu-vs-kernelsu/
       - title: Modern C++ userspace
         icon: ⚙️
-        details: ksud, ksuinit and su are rebuilt in C++, not borrowed upstream binaries behind a different UI.
+        details: C++ ksud (including su) and ksuinit maintain installation, module handling, and diagnostics.
         link: /en/guide/features/
       - title: Flexible module mounting
         icon: 🧩
-        details: MetaModule follows the upstream public contract and lets you choose a backend; existing modules still need device, version, and backend checks.
+        details: Built-in Kagami handles mounts, external MetaModules can take precedence, and Kasumi provides kernel views.
         link: /en/modules/meta-module/
       - title: Secure authentication
         icon: 🔐
@@ -41,7 +41,7 @@ config:
         link: /en/manager/superkey/
       - title: Complete management
         icon: 🛠️
-        details: Grants, Features, image patch/restore, modules, Lua plugins, partition backups, and Ramdisk tools live in one manager.
+        details: A unified Material 3 Expressive interface for grants, boot configuration, modules, AVB, and Ramdisk editing.
         link: /en/manager/overview/
       - title: YukiZygisk included
         icon: 🧬

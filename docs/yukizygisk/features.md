@@ -12,16 +12,26 @@ YukiZygisk 当前有两条明确分开的模块链：
 - **普通 Zygisk**：读取 `zygisk/<abi>.so`，当前公开 `zygisk.hpp` 为 API v5，运行时接受 API v1 到 v5；
 - **Native ZN**：读取 `zn_modules.txt` 并注入指定原生可执行文件，当前头文件为 Zygisk Next native API v4，运行时兼容 v3/v4，并提供可选 HYOS runtime 扩展。
 
-普通 Zygisk 的 `preAppSpecialize`/`postAppSpecialize` 与 Native ZN 的 `onModuleLoaded` 不是同一回调。模块卡片被标成 “Zygisk” 或 “Native” 只表示目录内容分类，不能把其中一套 API 用到另一条路径。
+普通 Zygisk 使用 `preAppSpecialize`/`postAppSpecialize` 等回调，Native ZN 使用 `onModuleLoaded`。管理器按目录内的库与清单，将模块标记为 “Zygisk” 或 “Native”；同时提供两种格式的模块会走两条加载路径。
 
-## 普通模块 loader
+## 加载设置与默认值
 
-状态页可以在两种普通 Zygisk 加载方式之间切换：
+状态页把加载器、映射方式、早加载和保护分开设置。未保存配置时的默认值如下：
 
-- `yukilinker（匿名）`：使用 YukiZygisk 自带的匿名 loader；
-- `system dlopen`：使用系统动态加载路径。
+| 设置 / 配置键 | 默认值 | 作用 |
+| --- | --- | --- |
+| YukiLinker / `yukilinker` | `true` | 普通 Zygisk 模块优先用自带加载器；关闭后使用系统加载器 |
+| 匿名内存 / `anonymous_memory` | `true` | 控制普通 Zygisk 模块的映射策略；Native 模块保留 Bionic 映射 |
+| 早加载原生模块 / `early_load` | `false` | 准备下次启动、早于 `post-fs-data` 的 Native 快照 |
+| 模块崩溃保护 / `crash_protection` | `true` | 在满足崩溃证据条件时暂停本次开机的普通 Zygisk 模块注入 |
+| 拒绝名单 / `denylist_mode` | `0` | `0` 关闭、`1` 强制、`2` 恢复 |
+| 镜像日志 / `dmesg_log` | `false` | 将 daemon 日志同时写到 dmesg |
 
-设置通过 `yzconfig.json` 保存并用 `yzctl reload` 通知 daemon，主要影响后续创建/加载的进程。已经加载模块的应用不会因为切换选项而卸载重载。Native ZN 自身始终使用其专用 loader 链，不应拿这个普通模块选项推断 ZN 加载方式。
+普通 Zygisk 模块带 `PT_TLS` 时直接使用系统 linker；其他库在自带加载器失败后会尝试系统路径。v1.8.0 的 Native ZN 模块固定通过 Bionic 加载，保留系统管理的库句柄、依赖和映射，不受这两个模块加载设置切换。core 使用独立的匿名引导路径。
+
+设置保存在 `/data/adb/ksu/yukizygisk/yzconfig.json`，通过 `yzctl reload` 通知 daemon 并刷新 early 快照。已运行进程不会卸载重载；早加载设置只影响下次启动快照。配置写盘后，运行时已连接就执行 reload；尚未建立运行时通道时，保存配置并更新快照，待 YukiZygisk 启动后读取。reload 失败也会继续尝试刷新 early 快照，返回失败不代表配置回滚。先用 `ksud yzctl config get` 查看保存值，再检查运行状态和错误。
+
+配置文件缺失时使用默认值。JSON 损坏或顶层不是对象时，会重新写入默认配置；读取权限错误或不安全的文件状态会直接报错，不会覆盖。配置修复后，重新检查上表中的设置。
 
 ## 拒绝名单模式
 
@@ -35,7 +45,7 @@ YukiZygisk 当前有两条明确分开的模块链：
 
 拒绝名单判断来自 YukiSU 的 UID profile。它不是 MetaModule 开关，也不会在 specialization 结束后替 Zygisk 模块清理模块自己创建的私有挂载。详见[模块挂载](/modules/magic-mount/)。
 
-普通 Zygisk 公共头文件仍声明 `FORCE_DENYLIST_UNMOUNT`。当前集成 core 会记录这个 module option，但实际卸载决策仍来自上述 UID/profile 路径；源码尚未把该 option 接到额外卸载动作。模块作者目前不应依赖该选项强制改变挂载状态。
+`FORCE_DENYLIST_UNMOUNT` 目前只记录选项，不执行额外卸载；模块作者应按上述 UID/profile 和拒绝名单行为处理挂载。
 
 ## 64 位与 32 位进程
 
@@ -52,34 +62,60 @@ YukiZygisk 包含 ARM64 与 ARM32 runtime/daemon。32 位 daemon 只在设备有
 - 管理器报告触发名称与计数；
 - Root、MetaModule、普通模块与 Lua 插件不会因此自动停用。
 
-这个计数来自 PID 更替，不能单独证明崩溃原因一定是某个模块。当前实现也不会因为把功能开关关掉再打开就显式清零；完整重启会得到新的内核运行状态。排查时保留触发前后的 kernel/daemon 诊断，而不是只截“安全模式”标签。
+重启计数按 PID 更替累计，触发原因需查看对应的 kernel/daemon 日志。关闭再开启功能不会清零计数；处理问题模块后完整重启，才能重置本次启动的安全模式。重启前先导出诊断报告。
 
 这与 YukiSU **系统安全模式**不同。系统安全模式会跳过模块/插件阶段并禁用 `/data/adb/modules/` 下的模块；YukiZygisk 安全模式只保护注入链。
 
-## 状态页究竟证明什么
+## 模块崩溃保护
 
-管理器每约 2 秒读取一次 `yzctl status --json`。关键字段语义如下：
+该功能与上面的全局注入安全模式分开。开启模块崩溃保护后，daemon 会将本次开机的 Zygote 退出事件与 tombstone 按进程、ABI、代际和模块文件身份关联。普通 Zygisk 模块位于已关联的直接故障或 system_server 故障的第 0 栈帧时，保护会暂停该模块本次开机的后续注入；32/64 位 daemon 共享暂停结果。
 
-| 显示 | 证据含义 | 不能证明什么 |
+暂停记录绑定 boot ID，不等同于写入模块 `disable`，不会自动卸载模块或撤销已经加载的代码。完整重启后不继承上次开机的暂停集合，所以应先处理有问题的模块再重启。Native ZN 也会记录崩溃信息，但不适用普通 Zygisk 的自动模块隔离。
+
+卡片上的“出现在崩溃回溯中”表示模块库出现在栈帧中；是否暂停注入，以卡片的暂停状态为准。排查根因时查看对应 tombstone 的故障位置与完整调用栈。
+
+## 状态含义与排查
+
+管理器每约 2 秒读取一次 `yzctl status --json`。按下面的状态继续检查：
+
+| 显示 | 含义 | 下一步 |
 | --- | --- | --- |
-| 功能已启用 | 当前内核 feature flag 为 on | daemon、Zygote core 或模块一定成功 |
-| Zygote `injected` | 对该 PID/代际收到 core 注入完成报告 | 每个第三方模块业务逻辑都成功 |
-| Zygote `unknown` | 只检测/重定向，尚无明确完成或失败报告 | 不能按成功或失败统计 |
-| Zygote `failed` | 当前代际有明确注入失败状态 | 不自动指出失败调用或责任模块 |
-| 普通模块数量 | 活动模块目录中存在 `zygisk/arm64-v8a.so` 或 `armeabi-v7a.so` | 这些库在目标应用里完成回调 |
-| Native `unknown` | 清单存在，但目标尚未观察到或没有正/负报告 | 不是“已加载” |
-| Native `injected` | 指定模块、目标类型与目标已有正向运行报告 | 模块最终功能一定正确 |
-| Native `failed` | 对该模块/目标存在明确失败证据 | 不能仅凭它断言 API 不兼容 |
+| 功能已启用 | 当前内核 feature flag 已开启 | 首次开启后重启，再查看 daemon 和 Zygote 状态 |
+| Zygote `injected` | 已收到该 PID/代际的 core 注入完成报告 | 启动目标应用，检查模块状态和功能 |
+| Zygote `unknown` | 已检测/重定向，但尚未收到完成或失败结果 | 刷新状态；持续无结果时检查对应 ABI 的 daemon/core 日志，记录 PID 后导出报告 |
+| Zygote `failed` | 当前代际注入失败 | 查看同一 PID/代际的 loader/core 日志 |
+| 普通模块数量 | 活动目录中含有相应 ABI 的 `zygisk/*.so` | 打开模块状态，查看加载报告 |
+| 普通模块 `injected` | 当前受监视 Zygote 的 PID/代际已有该模块注册/加载成功报告 | 测试目标应用中的 pre/post 回调和模块功能 |
+| Native `unknown` | 清单已登记，但尚未收到目标的模块结果 | 正常启动目标后刷新；开机服务需要重启设备。仍无结果时检查清单、ABI 和日志 |
+| Native `injected` | 已收到该模块、目标类型和目标的完成报告 | 测试模块功能；目标正常退出后仍保留此结果 |
+| Native `failed` | 该模块/目标已有失败记录 | 检查对应目标的 loader/core 日志、ELF ABI 和动态依赖 |
 
 Native 汇总键是“模块目录 ID + 目标类型 + 目标值”。一个成功目标随后正常退出时，汇总仍保留 `injected`；配置存在但从未观察到目标时保持 `unknown`。按进程视图会保留原始 PID/进程数据进行分组，但界面名称只显示路径 basename。
 
+汇总时，明确的 `crashed` / `failed` 优先于成功；存在成功且其余范围尚未观察到时仍为 `injected`；全部未观察到才是 `unknown`。进程退出单独显示为 `exited`，保留已有的注入结果。
+
 状态页的“注入次数”只统计有正向 `injected` 基础记录的 Zygote/Native 目标代际，不是所有 exec，也不是模块回调总次数。
+
+## CLI 查询与 daemon 恢复
+
+下面分别查看运行状态与当前配置：
+
+```sh
+ksud yzctl status --json
+ksud yzctl config get
+```
+
+JSON 中的 `kernel_health`、`daemon_health` 与 `native_exit_evidence` 可区分内核功能、daemon 实时响应和历史退出记录。daemon socket 使用随机名称，由内核发布的端点状态发现。脚本应调用 `yzctl status --json` 查询健康状态，不要自行拼接 socket 名称。
+
+daemon 缺失时，在 Root shell 中运行 `ksud yzctl ensure-daemon --abi all`。它只启动当前需要且尚未运行的实例：功能关闭或安全模式下会拒绝启动，已有但无响应的实例保持不动。返回 `reboot_required` 时完整重启；模块库存变更需要重启才能统一加载状态。恢复 daemon 后，通过正常流程重新启动目标；Zygote 和开机服务需要完整重启设备。
+
+`ksud yzctl config set KEY VALUE` 保存配置，并按上面的运行时状态应用设置；布尔值使用 `true` / `false`，拒绝名单使用 `0` / `1` / `2`。例如 `ksud yzctl config set dmesg_log true` 开启 daemon 日志镜像。`ksud yzctl refresh-snapshot` 重建或清除下次启动快照；修改 early 模块后仍需重启。
 
 ## 日志与诊断
 
-`zygiskd` 默认写入当前启动诊断目录中的独立 64/32 位日志。打开“镜像到 dmesg”后，daemon 日志也写入 kernel log；内核侧 YukiZygisk 日志本来就进入 dmesg。
+当前启动的 daemon 日志位于 `/data/adb/ksu/yukizygisk/diagnostics/current/logs/zygiskd64.log` 和 `zygiskd32.log`。打开“镜像到 dmesg”后，daemon 日志也写入 kernel log；内核侧 YukiZygisk 日志本来就进入 dmesg。
 
-YukiSU 会保留 `diagnostics/current` 与上一代 `diagnostics/old`，并记录 boot ID、状态、loader、capture 以及可获得的 tombstone/pstore 证据。通过管理器导出完整 bugreport 时，只要功能开启或存在实际诊断证据，外层报告会包含 `yukizygisk.tar.gz`。
+YukiSU 会保留 `diagnostics/current` 与上一代 `diagnostics/old`，并记录 boot ID、状态、loader、capture 以及可获得的 tombstone/pstore 文件。通过管理器导出完整 bugreport 时，只要功能开启或已有诊断记录，外层报告会包含 `yukizygisk.tar.gz`。
 
 报告问题至少提供：
 
@@ -90,3 +126,11 @@ YukiSU 会保留 `diagnostics/current` 与上一代 `diagnostics/old`，并记�
 5. 最近一次正常启动和异常启动分别发生了什么。
 
 继续阅读[普通 Zygisk 模块](/yukizygisk/modules/)或 [Native ZN API](/yukizygisk/native-zn/)。
+
+## 源码参考
+
+- [配置默认值](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/settings.hpp)
+- [状态与 CLI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yzctl.cpp)
+- [daemon 恢复](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yukizygisk_daemon.cpp)
+- [崩溃关联](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/daemon/crash_monitor.cpp)
+- [状态页](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/yukizygisk/YukiZygiskScreen.kt)

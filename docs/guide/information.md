@@ -5,57 +5,44 @@ title: 基础概念
 
 # 基础概念
 
-下面这些词会在文档里反复出现。不用背定义，知道它们分别管什么就够了。
+## LKM、KMI 与安装布局
 
-## LKM、KMI 和启动镜像
+`kernelsu.ko` 是 YukiSU 的可加载内核模块（LKM）。YukiSU 只支持 `CONFIG_KSU=m`，不提供 built-in `CONFIG_KSU=y`。最低用户空间为 Android 12（API 31），设备须属于 ARM64 GKI 2.0 范围。
 
-YukiSU 的内核部分叫 `kernelsu.ko`，它是一枚 LKM。传统 Ramdisk 布局会把 `ksuinit` 和 LKM 放进合适的启动镜像；ImgPatch 则把启动器与 LKM capsule 直接嵌入 `boot` 内核。两者都是 `CONFIG_KSU=m`，只是加载布局不同。
+KMI 描述内核模块接口基线，不等于手机当前 Android 版本。同为 Linux 6.1 仍可能存在符号版本、配置或厂商差异；完整目标见[兼容范围](/guide/compatibility/)。
 
-KMI 可以先粗略理解成“这枚内核模块要对上的接口版本”。两台手机都显示 Linux 6.1，不代表 `.ko` 就能互刷；KMI、符号版本、内核配置和厂商改动都可能不同。
-
-YukiSU 只支持 LKM，也就是 `CONFIG_KSU=m`，不支持把代码直接编进内核的 `CONFIG_KSU=y`。
-
-Android 用户空间最低为 Android 12（API 31）。当前完整构建打包的标准 KMI 从 `android12-5.10` 到 `android17-6.18`，具体 8 个目标见[兼容范围](/guide/compatibility/)。KMI 名称描述内核基线，不等于手机当前 Android 版本。
-
-## 三种加载状态
-
-| 管理器显示 | LKM 从哪里来 | 是否持久 |
+| 运行方式 | 加载位置 | 是否随启动保留 |
 | --- | --- | --- |
-| Ramdisk | `ksuinit` 在启动 Ramdisk 中加载 `.ko` | 是 |
-| ImgPatch | `boot` 内核中的 bootstrap 加载 LKM capsule | 是 |
-| late-load | Android 启动后由 `ksud` 临时加载 | 否，重启即失效 |
+| Ramdisk | 启动 Ramdisk 的 `ksuinit` 加载 LKM | 是 |
+| ImgPatch | `boot` 内核的 bootstrap 加载 capsule 内的 LKM | 是 |
+| late-load | Android 启动后临时加载 LKM | 否 |
 
-Ramdisk 与 ImgPatch 的输入、分区和恢复方式不同，见[安装与镜像模式](/guide/install-modes/)。
+[仅配置 Ramdisk 修补](/manager/boot-config/)是独立镜像用途，不安装或替换 LKM，不能单独用来首次获得 Root；已有 Ramdisk 加载链可以保留。
 
-## `ksuinit`、`ksud`、`su` 分别是什么
+## 内核、用户空间与管理器
 
-- `ksuinit`：启动时把 LKM 加载链接起来；
-- `ksud`：负责模块、策略、安装工具和管理器后端；
-- `su`：应用真正发起提权时使用的入口；
-- `zygiskd` 与相关库：YukiZygisk 的用户空间部分。
+- LKM 处理授权、内核 Hook、Feature 与 Kasumi 等能力。
+- `ksuinit` 连接传统 Ramdisk 启动流程。
+- `ksud` 处理模块、策略、镜像、配置和管理器后端，内含 Kagami 等组件。
+- `su` 是应用发起提权的用户空间入口，当前命令处理集成在 `ksud` 中；是否允许提权由内核授权和 App Profile 决定。
+- Manager 是控制与诊断界面；YukiZygisk daemon/core 是独立的注入运行组件。
 
-APK 里会带一份 `ksud`，设备上 `/data/adb/ksud` 还会有一份已经安装的版本。管理器比较实际 ELF，而不只看版本号：主页可以手动同步；设置中的自动更新在应用冷启动时同步，且默认关闭。运行时监视到该路径被替换后，还会留下证据并发出完整性警报。
+APK 内置 `ksud` 与设备上的 `/data/adb/ksud` 分开更新。管理器核对实际 ELF，提供手动同步。自动同步默认关闭；开启后，管理器冷启动时已取得内核认可的管理器身份，才会检查并同步。此时尚未认证会跳过，认证完成后可手动同步。同步不会替你更新 LKM 或启动镜像。
 
-这些同步只处理 `/data/adb/ksud`，不会顺便重写启动镜像、替换 LKM 或重启设备。
+## 模块、MetaModule、Kagami 与 Kasumi
 
-## 管理器怎么获得信任
+普通模块位于 `/data/adb/modules/`，可以包含脚本、属性、策略、WebUI 与系统文件。脚本由 `ksud` 执行，系统文件由挂载后端处理，Zygisk 库由注入运行时加载；排错时沿对应路径查看日志。
 
-正常情况下，内核检查官方管理器的包名和 APK 签名。使用自定义签名或私有管理器时，也可以设置 SuperKey，通过 `prctl` 认证管理器 UID。
+Kagami 是内置挂载实现；启用的外部 MetaModule 提供 `metamount.sh` 时优先由它负责挂载。Kasumi 是内核能力，可用于 su 入口、挂载视图与路径规则；它既不是普通 MetaModule 的别名，也不等于 YukiZygisk。
 
-动态管理器是另一套“额外信任谁”的机制，不是 SuperKey 的别名。SuperKey 也只认证管理器，不负责给普通应用发 Root。
+一次性脚本执行一次任务并记录结果，不保留为已安装模块。preinit 是下次完整启动才运行的早期动作快照。详见[模块系统](/modules/overview/)。
 
-## 模块和 MetaModule
+## 授权与认证
 
-普通模块都在 `/data/adb/modules/`。生命周期脚本由 YukiSU 执行；模块里的 `system/` 文件要怎样出现在系统路径，则交给 MetaModule。
+管理器认证回答“哪个管理器受内核信任”；应用授权回答“哪个应用可以 Root”。SuperKey 通过 `prctl` 认证管理器 UID，不是通用 Root 密码。动态管理器可以配置额外信任签名，兼容值覆盖不改变实际版本或能力。
 
-MetaModule 可以用 OverlayFS、bind mount 或其他做法。YukiSU 负责按上游协议调用它，不替每一种后端承诺相同效果。
+## Feature 与视图
 
-## Feature 编号
+当前定义 13 个 Feature：`0–4`、`6`、`101–107`。它们包含 su 入口、卸载策略、日志、ADB、SELinux 视图、shell 会话限制、YukiZygisk 与 Kasumi 等。启动配置强制固定的项目不能直接在运行时修改，见[功能控制](/manager/feature-control/)。
 
-当前 11 项正式 Feature 分成两段：
-
-- `0–4`：官方 KernelSU 兼容能力，包括 sucompat、内核卸载、sulog、ADB root 和 SELinux hide；
-- `5`：位于 KernelSU 预留编号区的 WebView Zygote umount；
-- `100–104`：YukiSU 扩展，包括增强安全、Magisk 兼容授权提示、默认 `no_new_privs`、YukiZygisk 和解锁状态隐藏。
-
-这些开关现在集中在管理器的“功能控制”页。源码里有某项能力，不代表你当前 LKM 一定支持；最终应看运行内核报告的状态与 `ksud` 实际保存结果。
+UTS View 改变目标看到的系统标识，不更换真实内核；属性隐藏不重新锁定 bootloader；挂载视图清理不撤销已获得的 Root。验证文件可见性时，从目标应用进程检查。

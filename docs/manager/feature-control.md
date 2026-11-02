@@ -5,66 +5,84 @@ title: 功能控制
 
 # 功能控制
 
-当前管理器把正式内核 Feature 集中到“设置 → 功能控制”。页面以 [`uapi/feature.h`](https://github.com/Rouyashiki/YukiSU/blob/main/uapi/feature.h) 的编号为准：0–99 是上游兼容预留区，YukiSU 明确编号的扩展从 100 开始。
+入口为“设置 → 功能控制”。YukiSU 定义 13 个 Feature：`0–4`、`6` 和 `101–107`。su 模式选择器同时管理 ID 0、105 和关联的 101，其余功能按页面控制。
 
-这里目前共有 11 项，而不是旧文档中的 0–4 与 100–103。
+## 支持、当前值与启动锁定
 
-## 页面如何读写状态
+管理器读取正在运行的内核返回的支持状态、当前值与强制标记。旧 LKM 未实现的功能会显示不支持；APK 更新不会自动给旧内核增加功能。
 
-管理器直接通过 ioctl 读取**正在运行的内核**是否支持某个 Feature 及其当前值。旧 LKM 没有对应 ID 时，开关会显示为不支持并禁用；看到开关不等于当前内核支持它。
+普通修改由 `ksud` 设置运行时值并保存，失败时尝试回滚，页面随后读取实际值。sulog、Magisk 兼容和 YukiZygisk 还有 daemon 或启动状态处理，因此直接调用内核 setter 不等同于完整设置流程。
 
-修改时，管理器让 `ksud` 执行运行时设置并保存配置。若持久化失败，它会尝试把运行时值回滚到修改前并再次保存。sulog、Magisk 兼容与 YukiZygisk 还需要 `ksud` 完成各自的 daemon 或启动快照副作用，因此不应绕过页面只调用一个内核 setter。
+被启动配置**强制开启或关闭**的功能会显示锁定，运行时修改被拒绝。解除锁定需要在安装页改为“不锁定”、重新修补并刷入目标镜像，再完整重启；重装 APK 或清除管理器数据不能解锁。见[启动配置](/manager/boot-config/)。
 
-## 管理器的 KernelSU 分组
+## Feature 编号与作用
 
-界面把 0–5 放在“KernelSU 功能”卡片中，但归属不能只看 UI 分组：当前官方 KernelSU `main` 公开的是 0–4；ID 5 的 WebView Zygote Umount 是 YukiSU 在上游预留编号区实现的功能，并非当前两边完全一致的上游 Feature。
+`0–99` 是上游兼容预留区。旧 ID 5（WebView 卸载）和 ID 100（严格安全策略）已移除并保留为空位，不要再写入旧配置。WebView 卸载改在[超级用户页的 WebView Zygote Profile](/manager/app-profile/)中设置。
 
-| ID | 页面名称 | 实际作用 | 生效提示 |
-| --- | --- | --- | --- |
-| 0 | 禁用 su 命令 | 反向显示 `SU_COMPAT`；关闭后阻止应用继续通过传统 `su` 入口提权 | 已经运行的 Root 进程不会被撤权 |
-| 1 | 关闭内核 umount | 反向显示 `KERNEL_UMOUNT`；关闭内核按 Profile 处理模块卸载的机制 | 会影响后续应用进程的模块可见性 |
-| 2 | 超级用户日志 | 记录内核超级用户事件并由 `sulogd` 持久化 | 开启后设置页才显示使用日志查看器 |
-| 3 | ADB Root | 让 `adbd` 以 Root 权限运行 | 保存后管理器会重启 `adbd`，当前 ADB 连接可能中断 |
-| 4 | SELinux 隐藏 | 对应用侧 SELinux 探测隐藏 YukiSU/KernelSU 策略改动 | 页面明确提示重启后生效 |
-| 5 | 为 WebView 卸载模块 | 在 WebView zygote 继承挂载 namespace 前卸载模块挂载 | 依赖全局 Kernel Umount 保持启用；重启后生效；修改 WebView 资源的模块可能失效 |
+| ID | 功能 | 当前行为与生效条件 |
+| --- | --- | --- |
+| 0 | 传统 su 兼容 | su 三态中的“传统”；与 Kasumi su 兼容互斥 |
+| 1 | Kernel Umount | 按 Profile 卸载模块挂载的全局机制；界面“关闭内核 umount”是反向开关 |
+| 2 | 超级用户日志 | 记录内核超级用户事件，由 `sulogd` 持久化；开启后设置页显示使用日志查看器 |
+| 3 | ADB Root | 使 `adbd` 以 Root 身份运行；保存后管理器重启 `adbd`，当前 ADB 会话需要重连 |
+| 4 | SELinux 隐藏 | 处理应用侧特定 SELinux 策略观察路径；按页面提示重启验证 |
+| 6 | 限制 Shell 仅可通过 ADB 获取 Root | 在已有 shell 授权之上，要求调用进程的祖先链包含 `adbd` 或 YukiSU Root 域进程；默认关闭 |
+| 101 | Magisk 风格授权弹窗 | 在 Kasumi su 模式中向未授权应用提供首次请求交互；最终授权仍受 App Profile 控制 |
+| 102 | 默认防逃逸（no-new-privs） | 默认开启；默认 Root Profile 阻止再次通过 YukiSU 提权，自定义 Profile 单独决定 |
+| 103 | YukiZygisk | 内置注入链路总开关；完整重启后分别验证 Zygote、Native 目标和模块状态 |
+| 104 | 解锁状态隐藏 | 在 service 阶段改写部分 bootloader/verified-boot 属性；启停均需重启验证 |
+| 105 | Kasumi su 兼容 | su 三态中的“Kasumi（实验性功能）”；需要对应内核能力与可用的 Kasumi |
+| 106 | Kasumi | 内置 Kasumi 功能开关；与“内置挂载”设置不同，按页面提示重启 |
+| 107 | 挂载视图整理 | 模块卸载后重建 mount namespace，并整理相应可见编号；重启目标应用后生效 |
 
-`KERNEL_UMOUNT` 是全局机制，App Profile 的“卸载模块”和 Feature 5 都是在它之上的具体策略。前者被关掉时，后两者不能凭空完成内核卸载。
+Kernel Umount、App Profile 的“卸载模块”、WebView 卸载和挂载视图整理是关联但不同的控制。关闭全局卸载后，其余选项不能替代被关闭的机制；已启动应用也不会自动重建 namespace。
 
-## YukiSU Feature 100–104
+## 升级后的默认值与模块接管
 
-| ID | 页面名称 | 实际作用 | 生效提示 |
-| --- | --- | --- | --- |
-| 100 | 使用严格安全策略 | 阻止非 YukiSU 域提权与未授权 app UID 降低 | 是授权边界加固，不是 Root 隐藏 |
-| 101 | Magisk 风格 su 弹窗 | 为未在 allowlist 中的应用提供可见 `su` 与首次授权提示，并配合 `msud` | 管理器会执行 `magisk-compat apply`；开启后按提示重启 |
-| 102 | 默认防逃逸（no-new-privs） | 让仍使用默认 Root Profile 的调用方默认禁止二次提权，包括管理器与 shell | 主要影响之后应用默认 Profile 的提权；自定义 Profile 可单独决定 |
-| 103 | YukiZygisk | 打开内核 Zygote 捕获与内置 YukiZygisk 链路 | 开关只保存主状态，完整重启后验证注入 |
-| 104 | 解锁状态隐藏 | 在 service 阶段通过内置 resetprop 把一组 bootloader/verified-boot 属性改成锁定外观 | 开启后重启；关闭后也需重启才能恢复本次开机已改写的属性 |
+升级到 v1.8.0 后，`ksud` 会执行一次默认值迁移，将 Feature 102 开启并持久化，包括旧配置中保存为关闭的情况。迁移完成后，你再次手动关闭的值会保留。旧自定义 Root Profile 的防逃逸标志与 SELinux domain 不会被全局默认值覆盖；需要调整时逐项编辑对应 Profile。
 
-### 解锁状态隐藏不等于重新上锁
+显示“由模块管理”的功能不能直接从管理器或普通 `ksud feature set/set-save` 修改。到接管模块的配置中修改，或停用该模块、重启后再使用功能控制页。su 兼容的 0、101、105 是关联组：模块接管其中一项时，整个模式组由它控制；关闭 Kasumi 所需的关联转换也受此限制。启动强制值仍优先于模块接管。
 
-Feature 104 只改 Android 属性视图，例如 `ro.boot.vbmeta.device_state`、`ro.boot.verifiedbootstate` 和部分厂商属性。它不会：
+排查“保存值与当前值不同”时分别查询：
 
-- 重新锁定 bootloader；
-- 恢复 AVB 信任链；
-- 修复已被修改的启动镜像；
-- 保证绕过应用的其他解锁或 Root 检测。
+```sh
+/data/adb/ksud feature list
+/data/adb/ksud feature get default_no_new_privs
+/data/adb/ksud feature get default_no_new_privs --config
+```
 
-把它当作软属性改写，不要把“显示 locked/green”当作真实启动安全状态。
+普通 `get` 读取运行内核；`--config` 只读取持久配置，未保存时显示 `Not set in config`。模块接管、启动强制或尚未恢复配置都需要结合 `list` 状态判断，不要反复写值覆盖负责该功能的模块。
 
-### Magisk 风格弹窗不替代 App Profile
+## su 三种模式
 
-Feature 101 改变未登记应用第一次调用 `su` 时的交互入口。最终是否允许以及允许后的 UID、capability、SELinux 与 namespace，仍由超级用户列表和 [App Profile](/manager/app-profile/)决定。
+| 模式 | 含义 |
+| --- | --- |
+| 关闭 | 同时关闭传统与 Kasumi su 兼容入口；不撤销已经运行的 Root 进程 |
+| 传统 | 使用传统 su 兼容路径，关闭 Kasumi su 兼容与 Magisk 风格弹窗 |
+| Kasumi（实验性功能） | 使用 Kasumi VFS su 入口；支持自定义 su 路径及单独开启 Magisk 风格弹窗 |
 
-### YukiZygisk 开关不证明注入成功
+切换模式会保存关联 Feature，失败时尝试恢复原状态。启动配置强制了 `su_compat` 时，关联模式、路径与弹窗控件也会受到限制。
 
-Feature 103 只是总开关。重启后仍需在 YukiZygisk 页面分别检查内核注入、Zygote、Native target 和模块状态。安全模式或 daemon 失败都可能让“已开启”与“已注入”不同。
+自定义 su 路径默认是 `/system/bin/su`，仅在 Kasumi 模式下可编辑。必须是有效绝对路径，父目录已经存在，不能覆盖现有文件。更改后同步更新工具中的 su 路径；只搜索原路径的工具将找不到新入口。
 
-## 哪些改动要特别小心
+## Shell 授权的三个独立概念
 
-- **禁用 su：** 管理器可能仍有驱动权限，但其他依赖 `su` 的工具会立刻失去新建 Root 会话的入口。
-- **ADB Root：** 重启 `adbd` 会断开当前传输；在远程调试环境中先准备备用连接。
-- **严格安全策略 / no-new-privs：** 错误理解会让原本依赖再次提权或 UID 切换的工具失效。
-- **WebView 卸载：** 安全性与修改 WebView 资源的模块存在直接兼容取舍。
-- **SELinux/解锁状态隐藏：** 都只处理各自定义的观察面，不是通用隐藏开关。
+- **总是给 shell Root：** 安装时的 shell 授权策略。
+- **ADB Root（ID 3）：** 决定 `adbd` 自身是否以 Root 运行。
+- **Shell 仅限可信会话（ID 6）：** 进一步限制已经获准的 shell 从哪些进程链提权。
 
-一次只改一项，记录旧值，并按页面给出的重启要求验证。若保存失败，不要只看开关动画；刷新页面确认运行内核的实际值，并查看 `ksud` 输出。
+ID 6 不会自动授权 shell，也不等同于开启 USB 调试。UID 2000 的 shell 祖先链中没有 `adbd` 或 YukiSU Root 域进程时会被拒绝，即使授权查询显示已允许。脱离原会话、被 init 接管后，也必须满足同一祖先链检查。
+
+## 隐藏功能改动的内容
+
+解锁状态隐藏只改属性视图，例如 `ro.boot.vbmeta.device_state`、`ro.boot.verifiedbootstate`。它不会重新锁定 bootloader、重建 AVB 签名或修复已修改的镜像。“locked/green”文本不等于真实启动安全状态。
+
+SELinux 隐藏处理策略查询，Kasumi 处理配置的文件与挂载视图，挂载视图整理处理 namespace 和可见编号。应用仍可从其他接口检测 Root。Kasumi 详细设置见 [Kasumi 与挂载配置](/manager/kasumi/)。
+
+一次只改一项，保存后核对实际值与错误输出；按要求重启应用或设备。开启 YukiZygisk 后完整重启，再按[注入状态检查](/yukizygisk/intro/)查看 Zygote 与目标进程。
+
+## 源码
+
+[Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/feature.h)、[FeatureControlScreen.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/feature/FeatureControlScreen.kt)、[SuCompatMode.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/feature/SuCompatMode.kt)、[shell_su_adb_only.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/feature/shell_su_adb_only.c)。
+
+[Feature persistence and ownership](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp).

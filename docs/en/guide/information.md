@@ -5,45 +5,44 @@ title: Core concepts
 
 # Core concepts
 
-## LKM, KMI and boot images
+## LKM, KMI, and installation layouts
 
-The YukiSU kernel component is `kernelsu.ko`. GKI 2.0 or a similar-looking kernel version does not make modules interchangeable. KMI, symbol versions, configuration and vendor changes can all affect loading.
+`kernelsu.ko` is YukiSU's loadable kernel module. YukiSU supports `CONFIG_KSU=m`, not built-in `CONFIG_KSU=y`. Userspace requires Android 12 (API 31) or later on ARM64 GKI 2.0 devices.
 
-In the traditional Ramdisk layout, the boot chain places `ksuinit` and the LKM in an appropriate boot image. ImgPatch instead embeds a bootstrap and LKM capsule directly in the kernel inside `boot`. Both remain `CONFIG_KSU=m`; only their loading layout differs from each other and from built-in `CONFIG_KSU=y`.
+KMI identifies a kernel module interface baseline, not the phone's current Android version. Two Linux 6.1 kernels can differ in symbol versions, configuration, or vendor changes. See [Compatibility](/en/guide/compatibility/).
 
-Userspace requires Android 12 (API 31) or newer. A current full build packages standard KMI targets from `android12-5.10` through `android17-6.18`; see [Compatibility](/en/guide/compatibility/) for all eight. A KMI name identifies the kernel baseline, not necessarily the Android version currently installed on the phone.
-
-## Three load states
-
-| Manager state | LKM source | Persistent |
+| Runtime mode | Loading path | Persistent across boots |
 | --- | --- | --- |
-| Ramdisk | `ksuinit` loads the `.ko` from a boot Ramdisk | Yes |
-| ImgPatch | a bootstrap in the `boot` kernel loads an LKM capsule | Yes |
-| late-load | `ksud` loads the LKM after Android has booted | No; lost at reboot |
+| Ramdisk | `ksuinit` loads the LKM from the boot Ramdisk | Yes |
+| ImgPatch | A bootstrap in the `boot` kernel loads the capsule's LKM | Yes |
+| late-load | LKM loaded after Android starts | No |
 
-Ramdisk and ImgPatch have different inputs, partitions and restore paths. See [Installation and image modes](/en/guide/install-modes/).
+A [configuration-only Ramdisk patch](/en/manager/boot-config/) is a separate image operation. It does not install or replace an LKM or provide initial root by itself; an existing Ramdisk loading chain can remain.
 
-## Userspace components
+## Kernel, userspace, and Manager
 
-- `ksuinit`: early boot and LKM loading
-- `ksud`: boot events, modules, policy and install tools
-- `su`: userspace entry point
-- `zygiskd` and libraries: YukiZygisk userspace
+- The LKM handles authorization, kernel hooks, features, and capabilities such as Kasumi.
+- `ksuinit` connects the traditional Ramdisk boot flow.
+- `ksud` handles modules, policies, images, configuration, and Manager operations; it embeds components including Kagami.
+- `su` is the userspace elevation entry, currently implemented in `ksud`; kernel authorization and App Profile determine whether elevation is allowed.
+- Manager provides controls and diagnostics. YukiZygisk daemon/core components implement injection.
 
-The manager APK embeds one `ksud`, while `/data/adb/ksud` is a separately installed binary. The manager compares their actual ELF content rather than only a version string. The home page can synchronize it manually; the cold-start auto-update option is off by default. Runtime replacement of the installed path is recorded and surfaced as an integrity alert.
+The APK's bundled `ksud` and `/data/adb/ksud` are updated separately. Manager checks the actual ELF and offers manual synchronization. Automatic synchronization is off by default. When enabled, it checks and synchronizes at app cold start only if the kernel already recognizes Manager's identity. Without that identity, it skips the attempt; synchronize manually after authentication. This does not update the LKM or boot images.
 
-This synchronization changes only `/data/adb/ksud`; it does not rewrite a boot image, replace the LKM or reboot the device.
+## Modules, MetaModules, Kagami, and Kasumi
 
-## Signature and SuperKey
+Ordinary modules live under `/data/adb/modules/` and can contain scripts, properties, policies, WebUI, and system files. `ksud` runs scripts, the mount backend handles system files, and the injection runtime loads Zygisk libraries. Read the logs for the component responsible for the failed operation.
 
-YukiSU has two manager authentication paths: trusted APK package/signature and optional SuperKey password authentication. Dynamic manager configuration is a separate mechanism for additional trusted managers.
+Kagami is the built-in mounting implementation. An enabled external MetaModule providing `metamount.sh` takes precedence. Kasumi provides kernel capabilities for su entries, mount views, and path rules; it is separate from MetaModules and YukiZygisk.
 
-## Modules and mount backends
+One-shot scripts execute a task and record its result without becoming installed modules. Preinit stages early actions for the next full boot. See [Module system](/en/modules/overview/).
 
-Normal modules live under `/data/adb/modules/`. YukiSU runs their lifecycle while one external MetaModule supplies the system-file mount backend. OverlayFS, bind mounts or other semantics belong to that MetaModule, not to a universal YukiSU promise.
+## Authorization and authentication
 
-## Feature controls
+Manager authentication determines which manager the kernel trusts; app authorization determines which app may obtain root. SuperKey authenticates a manager UID through `prctl`; it is not a general root password. Dynamic managers allow additional trusted signatures. Compatibility overrides do not change actual versions or capabilities.
 
-The current 11 formal Features occupy two ranges. IDs `0–4` remain compatible with official KernelSU: sucompat, kernel unmount, sulog, ADB root and SELinux hide. ID `5` is WebView Zygote unmount in the KernelSU-reserved range. YukiSU additions `100–104` are enhanced security, Magisk-compatible authorization prompts, default `no_new_privs`, YukiZygisk and unlock-state hiding.
+## Features and views
 
-They are grouped in the manager's Feature controls page. Presence in source does not make a feature supported by every running kernel; use the runtime report and the actual `ksud` save result.
+There are 13 defined feature IDs: `0–4`, `6`, and `101–107`. They cover su entries, unmount policy, logs, ADB, SELinux views, shell-session restrictions, YukiZygisk, and Kasumi. Boot-forced features cannot be changed directly at runtime. See [Feature controls](/en/manager/feature-control/).
+
+UTS View changes reported system identity without replacing the kernel. Property hiding does not relock the bootloader. Mount-view cleanup does not revoke existing root processes. Inspect files from the target app process when checking visibility.

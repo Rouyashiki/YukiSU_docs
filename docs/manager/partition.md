@@ -6,7 +6,7 @@ title: 分区与 Ramdisk 工具
 # 分区与 Ramdisk 工具
 
 ::: danger 这里能直接破坏启动与校准数据
-同名分区不代表镜像可以跨设备、固件或槽位使用。`persist`、`modem`、`fsg`、`nvram` 等内容还可能包含设备特有数据。不要把界面的确认框当作兼容性证明。
+只刷写目标设备、固件和槽位对应的镜像。`persist`、`modem`、`fsg`、`nvram` 等分区保存校准或设备数据；不要用其他设备的备份覆盖。
 :::
 
 从安装页未选择修补方式时，可在“高级工具”中进入分区管理器。
@@ -22,7 +22,7 @@ title: 分区与 Ramdisk 工具
 
 页面可以在常用/全部分区之间切换，按名称或块设备搜索，并过滤物理/逻辑分区。切换 A/B 槽位后会重新解析目标，不要从上一槽位的页面截图推断当前目标。
 
-另一槽位的动态分区没有现成设备节点时，页面提供显式映射操作。映射成功只说明节点可访问，不说明该槽位已经完成 OTA 或适合写入。
+另一槽位的动态分区没有现成设备节点时，页面提供显式映射操作。先等待 OTA 完成，再映射并操作未使用槽位；映射操作不会完成 OTA。
 
 ## 备份
 
@@ -52,9 +52,9 @@ title: 分区与 Ramdisk 工具
 - 应用缓存空间足够暂存；
 - 目标块设备能被解析。
 
-预检框显示文件名、大小、分区、块设备、槽位和容量。已知危险分区会额外标记，但列表不可能知道每个厂商的所有私有分区；没有红色标签不代表安全。
+预检框显示文件名、大小、分区、块设备、槽位和容量。已知危险分区会额外标记，但列表不可能知道每个厂商的所有私有分区；写入前按设备分区说明确认用途。
 
-::: warning 小镜像也不一定安全
+::: warning 容量检查不检查镜像内容
 “不大于分区容量”只防止明显溢出。它不验证镜像的设备型号、固件版本、AVB 链、header 内容或真实目标用途。
 :::
 
@@ -69,21 +69,21 @@ title: 分区与 Ramdisk 工具
 - 包声明的槽位策略；
 - 是否让 AK3 使用 `ksud` 内置 `mkbootfs`。
 
-后端会进行格式与槽位检查，但包内脚本仍由包作者控制。声明设备列表为空、写着当前机型或能够打开，都不证明这个内核适配当前固件。审查 ZIP、`anykernel.sh`、目标分区与恢复方式后再执行。
+后端会进行格式与槽位检查，但包内脚本仍由包作者控制。安装前检查发布说明是否支持当前固件，审查 `anykernel.sh` 的目标分区，并准备恢复镜像。设备列表为空时按未知适配处理。
 
 ## Ramdisk Editor 入口
 
 页面只在当前布局中最合理的 Ramdisk 载体上显示编辑入口：
 
 - 有 `init_boot` 时，不在 `boot` 上提供入口；
-- `init_boot` 与 `vendor_boot` 可以进入；
+- `init_boot`、`vendor_boot` 与 `recovery` 可以进入；
 - 没有 `init_boot` 的设备可从 `boot` 进入。
 
 进入时，管理器先把目标分区备份到应用缓存，再启动持久的 `ksud boot-ramdisk-editor` 会话。读取本身不会修改块设备。
 
 ## 当前支持的镜像布局
 
-后端接受普通 AOSP `boot`、`init_boot`、`vendor_boot` header v3–v4，并拒绝它明确无法安全重建的厂商特殊布局。支持的 Ramdisk 压缩包括：
+后端接受普通 AOSP `boot`、`init_boot`、`vendor_boot` header v3–v4，并拒绝它明确无法安全重建的厂商特殊布局。`recovery` 同样要求上述布局；编辑器不支持旧版 v0–v2 或其拒绝的厂商私有 Recovery 镜像。支持的 Ramdisk 压缩包括：
 
 - gzip / zopfli；
 - xz；
@@ -103,9 +103,14 @@ title: 分区与 Ramdisk 工具
 - 创建符号链接和硬链接；
 - 修改 mode、UID、GID 等 Unix metadata；
 - 编辑不超过 2 MiB 的文本，并选择字符编码；
-- 只读查看 ELF 文件头摘要。
+- 只读查看 ELF 文件头摘要；
+- 用集成 YukiFB 十六进制编辑器查看和修改普通文件的二进制内容；
+- 计算文件校验值（包括 SHA-256/SHA-512，另有 MD5、SHA-1、CRC32 等）；
+- 导出临时副本供外部应用打开或分享。
 
-编辑对象保存在内存 CPIO 文档中。对文本点“保存”只是写回当前内存文档；还没有生成启动镜像。
+外部打开/分享会把内容交给选定应用，不会自动把外部编辑结果写回 Ramdisk。需要替换时显式导入。校验值用于比较内容，MD5/CRC32 等不能当作发布者身份或安全签名。
+
+编辑对象保存在内存 CPIO 文档中。对文本或十六进制编辑点“保存”只是写回当前内存文档；还没有生成启动镜像。离开编辑器前还需处理未保存的文件编辑和未导出的重建结果。
 
 ## 重建、导出与退出
 
@@ -120,14 +125,22 @@ title: 分区与 Ramdisk 工具
 
 Ramdisk Editor **不会自动写入块设备**。导出后若要刷写，仍应回到分区工具，重新完成目标和容量预检。
 
-## AVB 与签名边界
+## AVB / dm-verity 控制
+
+`vbmeta`、`vbmeta_a`、`vbmeta_b` 的操作菜单新增“AVB / dm-verity”。页面读取**所选块设备保存的标志**，分别控制 AVB 验证与 dm-verity；不是从被改写的 Android 属性推断当前启动状态，也不是对所有 `vbmeta_*` 链分区统一操作。
+
+修改前显示目标分区、块设备、槽位并要求确认；管理器重新读取旧状态，保存后再次回读核对。bootloader 报告已锁定时控件禁用。状态读取失败时应刷新并保留错误，不要假定修改成功。
+
+保存后在下一次启动该槽位时才应用。关闭 AVB 验证时，单独开启 dm-verity 标志不能恢复验证；重新启用前须确保受验证镜像及签名有效。先备份该 `vbmeta` 分区，错误改动可能导致无法启动。
+
+## 重建后的 AVB 签名
 
 后端会尽量保留原压缩方式、boot header 布局，以及受支持的 AVB footer/vbmeta 数据位置。但它复制原有 vbmeta 数据，**不会为改过的 Ramdisk 重新生成可信签名**。
 
-所以：
-
-- footer 仍存在不等于哈希/签名仍有效；
-- 能成功重建不等于设备会接受启动；
-- 刷写前仍需按设备实际解锁与 Verified Boot 状态评估。
+修改内容后，原签名不能认证新内容。需要验证启动的设备必须重新生成匹配的哈希和签名；仅保留 footer 无法完成这一步。刷写前确认设备的解锁状态和实际 Verified Boot 要求。
 
 第三方客户端协议见 [Ramdisk Editor 协议](/dev/ramdisk-protocol/)。普通用户应优先保存原始分区备份与导出镜像，再考虑刷写。
+
+## 源码
+
+[PartitionAvbDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/partition/PartitionAvbDialog.kt)、[PartitionManagerHelper.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/partition/PartitionManagerHelper.kt)、[RamdiskEditorScreen.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/ramdisk/RamdiskEditorScreen.kt)。

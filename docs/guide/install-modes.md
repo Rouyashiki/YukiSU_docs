@@ -19,6 +19,8 @@ title: 安装与镜像模式
 
 “直接安装”会写块设备；“选择镜像修补”只生成文件。不要把页面入口的“直接”与下面的“内核直嵌”混为一谈。
 
+v1.8.0 的直接安装和未使用槽位安装不会再把修补结果复制到 Download。安装成功后查日志和目标分区，不要因下载目录没有新镜像就重复安装。需要可留存的镜像文件时，选择本地或远程镜像修补。
+
 ## 两种持久安装布局
 
 | 布局 | 后端命令 | 修改位置 | 目标限制 |
@@ -32,13 +34,13 @@ title: 安装与镜像模式
 
 管理器会从当前槽位、OTA 目标槽位或所选镜像解析目标 KMI，并将已验证的值通过 `--kmi` 传给 `ksud`。使用内置资源时，KMI 必须在 APK 打包的 LKM 列表中；检测失败或没有匹配项时，页面会要求选择，而不是拿当前 Android 版本猜。
 
-设备存在 `init_boot` 且目标不是 `android12-*` 时，普通 LKM 安装通常优先选择 `init_boot`；没有时回到 `boot`。这是当前通用选择逻辑，不会覆盖设备维护者对特殊分区布局的说明。
+设备存在 `init_boot` 且目标不是 `android12-*` 时，普通 LKM 安装优先选择 `init_boot`；没有时选择 `boot`。设备使用特殊分区布局时，先按维护者说明确认目标分区，再开始安装。
 
 ### ImgPatch / 内核直嵌
 
 内核直嵌模式从 `boot` 里的 `linux_banner` 识别 KMI；没有手选 `.ko` 时，再提取同名的内置 `<kmi>_kernelsu.ko`。它恢复目标内核所需的 kallsyms/BTF 信息，并把 LKM 与加载信息写入内核镜像。
 
-当前实现还有几条重要边界：
+使用 ImgPatch 时：
 
 - 只修补 `boot`；所选镜像必须是有效 AOSP boot image，而且其中确实有 ARM64 kernel；
 - 设备直装或 OTA 槽位安装会同时检查 `boot` 与 `init_boot`，清理由旧 KernelSU Ramdisk 布局留下的已知文件；
@@ -60,22 +62,28 @@ title: 安装与镜像模式
 - 直接带 `boot.img` / `init_boot.img` / `vendor_boot.img` 的 factory ZIP；
 - 外层 factory ZIP 中以 STORED 方式保存的 `image-*.zip`。
 
-服务器必须在 HEAD 响应中提供 `Content-Length` 和 `Accept-Ranges: bytes`。页面先探测包内可用启动分区与 boot KMI，再只提取所选分区。压缩的 `payload.bin`、不支持 Range 的网盘分享页、需要网页登录的跳转链接都不是有效输入。
+管理器以 GET `Range: bytes=0-0` 探测，要求返回 HTTP 206 与包含总长度的有效 `Content-Range`；后续范围读取也必须返回 206。页面先探测包内可用启动分区与 boot KMI，再只提取所选分区。压缩的 `payload.bin`、不支持 Range 的网盘分享页、需要网页登录的跳转链接都不是有效输入。
 
 当前远程入口走传统 `boot-patch`；要用 ImgPatch，请先提供本地 `boot.img`，或在已有 Root 的设备上选择直接/OTA 槽位安装。
+
+## 启动配置与仅配置模式
+
+高级选项可设置强制 Feature、preinit、启动调试和可选的内核模块黑名单。黑名单需显式开启；显示预填列表不代表它已启用。被强制固定的 Feature 不能靠运行时开关覆盖。
+
+“仅配置”对应传统 `boot-patch --no-install`：只更新配置 Ramdisk，不安装或替换 init/LKM，不单独提供 Root，已有 Ramdisk 加载链可以保留，跳过 LKM 所需的 KMI 检测，也不支持 ImgPatch。它会按本次选择重建配置；未指定的旧 shell 授权、强制 Feature 和黑名单会被清除。各项配置的保留规则见[启动配置](/manager/boot-config/)和[CLI](/dev/boot-images/)。
 
 ## 更新和恢复
 
 - Ramdisk 与 ImgPatch 可以互相切换，但切换逻辑必须先清除另一种布局留下的内容；不要手工只覆盖某个 `.ko`。
-- 设备侧 ImgPatch 直装会保留每个槽位的原厂 boot 备份；仍应另存当前固件的原厂镜像，不能把设备内唯一备份当成救砖方案。
+- ImgPatch 使用内容标识关联原厂备份，并在恢复时校验备份；仍应另存当前固件的原厂镜像，不能把设备内唯一备份当成救砖方案。
 - “恢复原厂镜像”和“永久卸载”不是一回事。前者处理启动镜像，后者还会移除 YukiSU 用户空间与模块数据。
 - APK 安装不会修改 LKM 或启动镜像；`ksud` 也有独立的同步与完整性状态，见[更新 YukiSU](/guide/update/)。
 
 需要精确 CLI 参数时继续看[启动镜像命令](/dev/boot-images/)。
 
-## 事实来源
+## 源码
 
-- [管理器安装流程](https://github.com/Rouyashiki/YukiSU/blob/main/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Install.kt)
-- [`boot-patch` 与恢复实现](https://github.com/Rouyashiki/YukiSU/blob/main/userspace/ksud/src/boot/boot_patch.cpp)
-- [`boot-patch-v2` ImgPatch 实现](https://github.com/Rouyashiki/YukiSU/blob/main/userspace/ksud/src/boot/boot_patch_v2.cpp)
-- [远程镜像提取实现](https://github.com/Rouyashiki/YukiSU/blob/main/manager/app/src/main/java/com/anatdx/yukisu/core/tasks/ExtractImage.kt)
+- [管理器安装流程](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Install.kt)
+- [`boot-patch` 与恢复实现](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch.cpp)
+- [`boot-patch-v2` ImgPatch 实现](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch_v2.cpp)
+- [远程镜像提取实现](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/core/tasks/ExtractImage.kt)

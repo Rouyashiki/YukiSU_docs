@@ -12,6 +12,6 @@ APatch follows the KernelPatch path, while YukiSU uses a KernelSU-derived LKM. T
 3. Uninstall using APatch's own flow or restore the correct modified boot partition
 4. After a clean boot and confirmation that the device is within the [Android 12+/ARM64 GKI 2.0 boundary](/en/guide/compatibility/), follow [Get started](/en/guide/get-started/)
 
-APatch/KernelPatch uses SuperKey with the NR45 SuperCall command plane for root, KPM, configuration and other privileged requests. YukiSU submits it through `prctl` only to authenticate the manager UID. The keys, kernel patches and managers are not interchangeable, and KPM modules cannot be loaded as YukiSU modules.
+YukiSU uses SuperKey only to authenticate a manager UID, not as an app root password. Configure YukiSU authentication during migration instead of copying APatch key settings, kernel patches, or its manager. KPM modules cannot be installed as YukiSU modules.
 
 APatch and YukiSU ImgPatch can both involve the kernel inside `boot`, but their capsules, loaders and recovery metadata are unrelated. Never treat a KernelPatch/KPM kernel as stock input to YukiSU ImgPatch. Restore through APatch first, then select YukiSU's [Ramdisk or ImgPatch layout](/en/guide/install-modes/).

@@ -5,12 +5,12 @@ title: Get started
 
 # Get started
 
-This page has one job: install YukiSU and prove that basic root works.
+Follow these steps to install YukiSU and test basic root access.
 
-The manager can patch images and install an LKM. It cannot turn the wrong KMI into the right one, and it cannot know every vendor boot layout. You still need to know the device you are modifying.
+The manager patches images and installs the LKM. Before starting, identify the target KMI, boot partition, and slot; the steps below explain what to check.
 
 ::: danger Plan recovery before changing the boot chain
-Keep stock images from the exact current firmware and verify that bootloader/fastboot recovery still works. A wrong partition, slot or LKM can stop Android from booting.
+Keep stock images from the exact current firmware. Confirm that the device can enter bootloader/fastboot and that the computer recognizes it. A wrong partition, slot or LKM can stop Android from booting.
 :::
 
 ## Check the device first
@@ -39,9 +39,9 @@ Current standard builds cover eight KMI targets from Android 12/5.10 through And
 
 ## 1. Download the files
 
-Get the official manager from [YukiSU Releases](https://github.com/Rouyashiki/YukiSU/releases/latest). Avoid mirrored drives, chat attachments and similarly named repositories.
+Download `YukiSU_v1.8.0_10670-arm64-v8a-release.apk` from the [v1.8.0 release](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.8.0). The `.asc` file is a signature and Source code is a source archive; neither is an installable APK.
 
-The official full Manager APK embeds all eight current standard-KMI LKMs. Normally prepare:
+Full Manager builds embed eight standard-KMI LKMs. Single-target builds contain only the selected KMI; confirm that the installation page offers your target. Prepare these files:
 
 - **YukiSU Manager APK** for installation, grants, modules and diagnostics;
 - **stock boot images from the exact current firmware** for first install and recovery;
@@ -59,11 +59,11 @@ Use a bundled matching resource when available. Otherwise build against the devi
 | Download an image | An HTTPS URL exposes a range-readable OTA/factory ZIP or `payload.bin`, and only one boot partition should be extracted |
 | Local `.ko` | A device-specific or self-built LKM |
 
-On a first install, YukiSU does not yet provide root, so you normally patch a stock image from the current firmware and flash it using the device's documented method. If another root solution is already active, read the relevant migration page first.
+If the device has no root access, patch a stock image from the current firmware and flash it using the device’s documented method. If another root solution is already active, read the relevant migration page first.
 
-Each entry still chooses between traditional Ramdisk and direct-kernel ImgPatch layouts. They have different partitions, input constraints and restore paths. ImgPatch accepts only a `boot` image containing an ARM64 kernel, while the remote-image entry currently uses the traditional path. Read [Installation and image modes](/en/guide/install-modes/) before enabling “Embed LKM directly into boot kernel”.
+Local image patching and direct/inactive-slot installation can choose traditional Ramdisk or direct-kernel ImgPatch layouts. They have different partitions, input constraints and restore paths. ImgPatch accepts only a `boot` image containing an ARM64 kernel, while the remote-image entry currently uses the traditional path. Read [Installation and image modes](/en/guide/install-modes/) before enabling “Embed LKM directly into boot kernel”.
 
-There is no universal fastboot command for every phone. If there were, vendors would not have made `boot`, `init_boot`, vendor layouts and A/B slots this entertaining.
+Advanced options include boot configuration and configuration-only patching. Keep normal LKM installation for initial root: configuration-only mode does not install an LKM. See [Boot configuration](/en/manager/boot-config/).
 
 ## 3. Read the summary before pressing start
 
@@ -73,10 +73,10 @@ Confirm that:
 2. LKM KMI matches the target kernel;
 3. Ramdisk or ImgPatch was selected deliberately and the input fits that mode;
 4. partition and slot are correct;
-5. output image and logs will be kept;
+5. a location is ready for output images and logs; direct installation produces logs without exporting an extra image;
 6. stock recovery is ready.
 
-If manager detection and device-maintainer documentation disagree, stop and investigate. Many bad flashes come from giving a perfectly working tool the wrong target with great confidence.
+If Manager detection disagrees with the device maintainer’s instructions, stop. Confirm the firmware version, boot partition, and target slot before continuing.
 
 ## 4. Leave SuperKey alone on the first install
 
@@ -88,7 +88,7 @@ The official manager uses package and APK signature trust. SuperKey is not requi
 | Set | Adds key-based manager authentication |
 | Disable APK signature verification | Removes signature fallback; high risk |
 
-SuperKey authenticates the manager. It is not an app root password or a feature that becomes better merely because it sounds advanced. Read [SuperKey authentication](/en/manager/superkey/) when you actually need custom signing or a private manager.
+Leave SuperKey empty for your first installation with the official Manager. For custom signing or a private manager, follow [SuperKey authentication](/en/manager/superkey/).
 
 ## 5. Write and reboot
 
@@ -97,7 +97,7 @@ After checking the target, perform the patch or installation. For manual flashin
 Keep these on the computer before rebooting:
 
 - stock images for the current firmware;
-- the newly patched image;
+- the output from image patching; direct and OTA-slot installation do not export an extra image file;
 - patch/install logs;
 - working platform-tools or vendor recovery tools.
 
@@ -114,25 +114,25 @@ After boot:
 5. One trusted test app can open and close an authorized `su` session.
 6. The same state survives one more reboot.
 
-This proves the LKM → `ksud` → manager → app-grant path.
+Once these checks pass, continue with your everyday modules.
 
 ## 7. Add modules and YukiZygisk afterwards
 
-1. Keep or install a suitable MetaModule only when a module needs files mounted under paths such as `system/`.
-2. When a MetaModule is needed, reboot and confirm its mount backend first.
-3. Then add ordinary modules.
-4. Enable YukiZygisk only if Zygisk modules are needed.
-5. Enable injection modules one at a time, or at least know which recent change to disable first.
+1. Start with built-in Kagami, or identify which existing external MetaModule owns mounting.
+2. Install one trusted module, reboot when required, and verify its files and behavior.
+3. Select an external MetaModule or explicitly configure the Kasumi backend only when needed.
+4. Enable YukiZygisk for modules that need it, reboot fully, and verify them individually.
+5. Follow the separate guides for one-shot scripts, hot installation, and preinit.
 
-This is not asking for a laboratory-grade seven-stage experiment. It simply avoids changing root, the mount backend, ten modules and Zygisk before the first reboot, then having no idea which layer failed.
+See [Module system](/en/modules/overview/) and [Mount backends](/en/modules/magic-mount/). Change one major component at a time to keep failures attributable.
 
 ## Installation is complete when
 
 - YukiSU remains detected after reboot;
 - the manager-reported load mode matches the installed layout;
 - only authorized apps receive root;
-- `ksud`, manager and LKM versions make sense together;
-- MetaModule mounts files required by modules;
+- installed `ksud` matches the APK's bundled version, and the running LKM matches the selected build;
+- the selected Kagami or MetaModule backend mounts the required files;
 - root and ordinary modules work while YukiZygisk is off.
 
 ## Next

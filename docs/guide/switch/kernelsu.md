@@ -5,7 +5,7 @@ title: 从 KernelSU 切换
 
 # 从 KernelSU 切换
 
-先放心：不用清空 `/data/adb`，不用把模块全卸了，也不用迁移完再一个个装回来。你只要先弄清楚现在用的是 built-in KernelSU 还是 KernelSU LKM。
+迁移时保留 `/data/adb` 和现有模块。先备份配置并确认当前是 built-in KernelSU 还是 KernelSU LKM；非标准集成需单独核对恢复路径。
 
 ::: info 关键思路
 先把 YukiSU 管理器安装到当前 KernelSU 环境，并由 KernelSU 授予它 Root。这样 YukiSU 管理器就能在当前开机周期内完成镜像恢复或直接安装。
@@ -54,24 +54,26 @@ LKM 切换更简单：**不需要先还原镜像，也不需要卸载现有 Kern
 
 ## 模块、MetaModule 与配置怎么办
 
-基本都能原样留下：
+可以保留现有数据，但迁移前应备份，并在迁移后核对实际兼容性：
 
 | 内容 | 迁移处理 |
 | --- | --- |
 | 普通 KernelSU 模块 | 保留；YukiSU 按上游生命周期继续处理 |
-| MetaModule | 保留；YukiSU 完全遵循上游 MetaModule 接口与顺序 |
+| MetaModule | 保留；YukiSU 继续处理其生命周期与挂载脚本 |
 | 模块配置 | 保留在原位置，无需批量导出重建 |
-| Root 授权 / App Profile | 数据通常会继续存在；迁移后在管理器中确认即可 |
-| Zygisk Next 与其模块 | 可以继续使用；若改用 YukiZygisk，再按需停用外部方案，避免同时启用两套运行时 |
+| Root 授权 / App Profile | 保留原数据；重启后逐项确认授权和 Profile，异常项从备份恢复或重新配置 |
+| Zygisk Next 与其模块 | 可以继续使用；若改用 YukiZygisk，先停用外部运行时，再开启 YukiZygisk |
 | KernelSU 管理器 | 确认 YukiSU 正常后即可卸载 |
 
 别因为换了 Root 就顺手重装 MetaModule。只有模块自己绑定了某个 Android 版本、内核、挂载后端或私有接口时，才需要单独处理。
 
+当前 YukiSU 还包含内置 Kagami：没有启用的外部 `metamount.sh` 时会使用它；已有外部后端仍优先。不要在迁移 Root 的同时无意切换挂载后端。见[模块挂载](/modules/magic-mount/)。
+
 ## 重启后确认
 
-重启后看几眼就行：
+重启后逐项检查：
 
-- YukiSU 管理器显示已安装，LKM、`ksud` 与管理器版本合理；
+- YukiSU 管理器显示已安装，运行中的 LKM 对应所选构建，设备侧 `ksud` 与 APK 内置版本一致；
 - 首页显示的 Ramdisk 或 ImgPatch 运行方式与迁移时选择一致；
 - 已授权应用可以正常请求 Root；
 - MetaModule 和普通模块状态仍在；

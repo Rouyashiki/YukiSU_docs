@@ -5,12 +5,12 @@ title: SuperKey authentication
 
 # SuperKey authentication
 
-SuperKey is YukiSU's optional **manager identity authentication**. It lets custom-signed, private or specialized managers prove to the kernel that the caller may become the YukiSU manager when the default APK-signature path is not suitable.
+SuperKey is an optional **manager authentication key** for custom-signed or private managers to authenticate with the kernel.
 
-Normal users do not need it. The trusted official package and APK signature remain the default and simplest trust path.
+Leave it empty when using the official manager. The trusted package name and APK signature provide authentication by default.
 
-::: important Scope
-YukiSU SuperKey authenticates only the manager. It is neither an application root password nor a universal credential that directly executes arbitrary privileged kernel commands. Superuser grants and App Profile still decide application access.
+::: important Manager authentication only
+Successful SuperKey authentication gives the caller YukiSU manager identity. Superuser grants and App Profile still control application root access.
 :::
 
 ## Different from KernelPatch / APatch SuperKey
@@ -37,10 +37,10 @@ The two keys are not interchangeable. APatch instructions for `supercall`, KPM o
 | Set | Enabled | Signature remains available; SuperKey is added | Keep official fallback with a custom manager |
 | Set | Disabled | SuperKey only | Closed private deployment; high risk |
 
-“Disable APK signature verification” is a separate installation option. Setting a key does not disable signature authentication automatically.
+Setting SuperKey retains APK signature authentication. Selecting “Disable APK signature verification” switches to SuperKey-only authentication.
 
-::: danger Do not use SuperKey-only to hide an ordinary auth failure
-If the official APK cannot authenticate, inspect its source, package/signature, YukiSU LKM and version combination first. Disabling signatures hides the original problem and makes recovery depend entirely on one credential.
+::: danger Keep the key for SuperKey-only mode
+After disabling signature authentication, even the official APK needs the key. If it is lost, replace the LKM or restore stock images through external flashing. If the official APK cannot authenticate, check its source, package name, signature, and LKM version before changing authentication methods.
 :::
 
 ## The kernel does not keep plaintext
@@ -51,13 +51,13 @@ The final LKM therefore does not need a directly readable plaintext SuperKey, bu
 
 ## Provisioning the key
 
-The currently supported entry is the manager's LKM patch/install page. After a SuperKey is entered, `ksud` creates a random salt and writes the salt, verifier, and authentication mode into the patchable data block of the LKM used for that operation. Both ramdisk and ImgPatch installation paths handle this data.
+Configure SuperKey on the manager's LKM patch/install page. After a key is entered, `ksud` creates a random salt and writes the salt, verifier, and authentication mode into the patchable data block of the LKM used for that operation. Both ramdisk and ImgPatch installation paths handle this data.
 
 Only that output or installation is affected; existing images and `.ko` files are not modified retroactively. Rotation therefore also requires a new patch and installation.
 
 `CONFIG_KSU_SUPERKEY=y` compiles SuperKey support into the LKM, and current official build scripts pass it. Do not treat `KSU_SUPERKEY="..."` as a complete compile-time provisioning path in current source: `Kbuild` accepts the macro, but the runtime verifier is actually injected by the `ksud` patch flow.
 
-A visible manager input also does not prove that an arbitrary third-party or old LKM contains the patchable block. Verify patch output and the installed authentication state.
+The selected LKM must contain the SuperKey patchable block. If patching fails, retain the error log and select a compatible LKM with SuperKey support. After installation, fully reboot and authenticate from Home with the key.
 
 ## How authentication works
 
@@ -70,18 +70,18 @@ A visible manager input also does not prove that an arbitrary third-party or old
 
 `prctl` provides a first-authentication path usable under Android seccomp. The current manager retains compatibility handling after it already has a driver fd, but the public model is unchanged: YukiSU SuperKey authenticates the manager and is not an NR45 general SuperCall.
 
-The kernel rejects future timestamps, requests older than 30 seconds, mismatched or truncated keys, and requests when no SuperKey was configured. A badly wrong device clock can therefore reject a correct key. Authentication state belongs to the running kernel and must be established again after reboot.
+The kernel rejects future timestamps, requests older than 30 seconds, mismatched or truncated keys, and requests when no SuperKey was configured. A delay longer than 30 seconds after request creation, or a clock jump during authentication that moves the timestamp outside that window, rejects even a correct key. Authentication state belongs to the running kernel and must be established again after reboot.
 
 ::: warning Failed-attempt protection
-In the current implementation, three consecutive failures terminate the authenticating process; ten total failures since the current kernel boot trigger a device reboot. Success resets only the consecutive counter, not the total. Do not treat a real device as an unlimited password-guessing target.
+Three consecutive failures terminate the authenticating process; ten total failures since the current kernel boot trigger a device reboot. Success resets only the consecutive counter, not the total. Check the key and configuration after the first failure before retrying.
 :::
 
 ## Storage and boot authentication
 
 - **Do not store SuperKey:** the manager retains no original key and requires manual input after reboot.
-- **Authenticate SuperKey at boot:** the manager uses a saved key for one authentication attempt after startup. App autostart permission is required and failure is not retried indefinitely.
+- **Authenticate SuperKey at boot:** after user unlock and `BOOT_COMPLETED`, the manager uses a saved key for one authentication attempt. App autostart permission is required; failure is not retried.
 
-Manager-side storage of the original input is separate from the salt and verifier embedded in the LKM.
+“Do not store” deletes the saved key and prevents further storage. The LKM's salt and verifier remain unchanged. Enter the key manually after each reboot when this option is enabled.
 
 Whenever a key is already saved, opening Home while the app is not yet authenticated also makes an attempt with it. Enabling the separate boot option starts one non-retrying service after user unlock and `BOOT_COMPLETED`; neither path loops on failure.
 
@@ -102,7 +102,7 @@ Public release builds should normally rely on official signature authentication 
 The verifier is part of the LKM trust configuration; changing an app setting cannot rotate it.
 
 1. Keep stock images and a bootable LKM matching current firmware.
-2. Build or patch a new LKM with the new key.
+2. Enter the new key on the patch/install page and repatch the LKM.
 3. Decide whether APK signature authentication remains enabled.
 4. Install through the normal LKM flow to a verified slot.
 5. Reboot and authenticate with the new key.
@@ -112,6 +112,18 @@ Returning to signature-only trust also requires an LKM with that trust configura
 
 ## Troubleshooting
 
-Check whether Home can read the YukiSU LKM, the LKM actually has SuperKey configured, the input has no surrounding spaces or full-width variants, device time is correct, the manager is the intended build, manual authentication is still required after reboot, and app autostart restrictions blocked automatic authentication.
+Check in this order:
+
+1. Home can read the YukiSU LKM.
+2. The LKM has SuperKey support and a provisioned key.
+3. The input has no surrounding spaces, full-width variants, or case differences.
+4. Request delays or clock jumps during authentication have not exceeded the 30-second window.
+5. The manager comes from the intended build.
+6. Manual authentication has been completed after reboot if “Do not store SuperKey” is enabled.
+7. App autostart restrictions have not blocked automatic authentication.
 
 If signature authentication remains enabled, use the trusted official manager and install an LKM with a known trust configuration. If signatures were disabled and the key is lost, there is no password-recovery path in the current LKM; restore trust using a compatible LKM or stock image matching the device, firmware and KMI.
+
+## Source references
+
+[superkey.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/manager/superkey.c), [supercall.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/supercall/supercall.c), [ksu.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/cpp/ksu.c).

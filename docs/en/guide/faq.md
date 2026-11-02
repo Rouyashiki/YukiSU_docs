@@ -5,102 +5,88 @@ title: FAQ
 
 # FAQ
 
-## Is YukiSU just a KernelSU skin?
+Find answers to common installation, module, authorization, and update questions here. For a failed operation, use [Common troubleshooting](/en/troubleshoot/common/).
 
-No. It comes from the KernelSU ecosystem and was forked from SukiSU-Ultra. It keeps TSR/LKM hook semantics aligned with upstream, while its C++ userspace, manager, authentication extensions, ImgPatch and YukiZygisk are maintained by YukiSU. Shared ecosystem contracts do not make managers or `ksud` interchangeable. See [YukiSU vs KernelSU](/en/guide/yukisu-vs-kernelsu/).
+## Which devices are supported?
 
-## What devices are supported?
+Android 12 (API 31) or later, ARM64, GKI 2.0, Linux 5.10+, and the required module-loading, Kprobes, Kretprobes, and syscall tracepoints. YukiSU supports only `CONFIG_KSU=m`. If a vendor changes exported symbols, vermagic, or module configuration, use an LKM built for that kernel. See [Compatibility](/en/guide/compatibility/).
 
-The current supported scope is Android 12 (API 31) or newer, ARM64, GKI 2.0, Linux 5.10+, LKM (`CONFIG_KSU=m`), with loadable modules and the required Kprobe, Kretprobe and syscall tracepoint facilities. Android 11 and older, GKI 1.0, non-GKI, ARM32, x86_64 and built-in `CONFIG_KSU=y` are unsupported. Full builds currently cover eight standard targets from `android12-5.10` through `android17-6.18`; every device still needs matching KMI, vermagic, symbols and configuration. See [Compatibility](/en/guide/compatibility/).
+## Does installing the APK provide root?
 
-## Does “LKM-only” mean there is no userspace?
+No. It supplies Manager and bundled resources; a matching LKM must still load. If the device has no root access, patch a stock image and flash it using the device’s procedure. [Jailbreak mode](/en/guide/jailbreak-mode/) also has separate bootstrap requirements.
 
-No. It only describes kernel deployment. A complete environment still has `kernelsu.ko`, C++ `ksud`/`ksuinit`/`su`, the Android manager, modules and optional MetaModule/YukiZygisk.
+## How do Ramdisk, ImgPatch, and configuration-only images differ?
 
-## Can the manager one-click root every supported device?
+Ramdisk loads the LKM through `ksuinit`. ImgPatch embeds a bootstrap and LKM capsule in the ARM64 `boot` kernel. A configuration-only Ramdisk preserves the existing loading chain without installing or replacing an LKM; it cannot add root to a stock image by itself. See [Image modes](/en/guide/install-modes/) and [Boot configuration](/en/manager/boot-config/).
 
-No. It can patch a local image, extract a boot partition from a range-readable HTTPS OTA/factory package, install directly, install to an inactive post-OTA slot, and use a bundled or local LKM. It cannot replace KMI, partition, slot, vendor-layout or Ramdisk/ImgPatch decisions. Follow [Get started](/en/guide/get-started/).
+## Why are features missing after updating the APK?
 
-## What happens if I install only the APK?
+The APK, `/data/adb/ksud`, and running LKM are separate components. Synchronizing `ksud` does not change boot images; an updated on-disk LKM needs a full reboot before its running version can be checked. See [Updating](/en/guide/update/).
 
-You get the UI, not kernel capability. Without a compatible LKM, “not installed” and unavailable pages are expected.
+## Do modules still require a MetaModule?
 
-## Why does an LKM fail on another Linux 5.10 kernel?
+Not necessarily. Script, property, and policy modules need no system-file mounting. Modules that need mounting can use built-in Kagami. An enabled external MetaModule with `metamount.sh` takes precedence; otherwise Kagami runs. See [Module mounting](/en/modules/magic-mount/).
 
-The major version is only one condition. KMI, vermagic, symbol versions, configuration and vendor patches may differ. Obtain a matching build or compile against the device kernel tree; never force-load or disable checks.
+## Why does a successfully installed module have no effect?
 
-## What is the difference between Ramdisk and ImgPatch?
+First check whether a reboot is pending, then read the script logs and identify the active mount backend. If global files changed but the app sees old files, check that app’s mount-isolation settings. For Zygisk modules, also check ABI, target processes, and injection results in YukiZygisk.
 
-Traditional mode uses `ksuinit` in a boot Ramdisk and may patch `boot` or `init_boot` according to the layout. ImgPatch embeds a bootstrap and LKM capsule directly in the ARM64 kernel inside `boot`; it accepts only an AOSP `boot` image containing a kernel. Both are LKM modes, not different grades of root. Their inputs, backups and restore paths differ. See [Installation and image modes](/en/guide/install-modes/).
+## Can every module be hot-installed?
+
+No. The author must opt in, the module must not be a MetaModule, safe mode must be off, and request/path checks must pass. `init.rc`, preinit, boot snapshots, and existing processes still require a reboot. A failed hot-install script does not restore the old module directory or undo changes already made by the script. See [Hot installation](/en/modules/hot-install/).
+
+## Why are one-shot scripts absent from installed modules?
+
+They execute once and retain the latest run result without becoming installed modules or entering module updates. See [One-shot scripts](/en/modules/one-shot/).
+
+## Does successful preinit preparation mean actions ran?
+
+No. It means a snapshot is prepared for the next boot. Check boot logs for action results. Consecutive failed boots trigger separate protection; resetting its counter does not run actions immediately. See [Preinit](/en/modules/preinit/).
+
+## Why is a feature marked forced and uneditable?
+
+It is fixed by boot configuration. Change the corresponding image configuration and reboot fully; a runtime toggle cannot override it. See [Boot configuration](/en/manager/boot-config/).
+
+## Why is shell denied even after root authorization?
+
+Check ID 6, `SHELL_SU_ADB_ONLY`. In addition to authorization, it requires an `adbd` or YukiSU root-domain ancestor. A shell without either trusted ancestor is denied. This differs from ADB Root and ordinary app grants.
+
+## Where did WebView unmounting and Enhanced security go?
+
+v1.8.0 moves WebView unmounting to the non-root profile under Superuser → WebView Zygote. Restart affected processes after changing it; reboot fully to recreate the shared WebView Zygote. Feature 5 is retired, and Enhanced security and feature 100 have been removed. Those IDs in older guides no longer apply. See [App Profile](/en/manager/app-profile/).
+
+## Why did the default root domain and escape-prevention setting change?
+
+v1.8.0 defaults to `u:r:ksu:s0` and enables feature 102 during its first migration. Existing custom domains and per-app flags remain, with compatibility handling for legacy `su` policies. To adjust an app, open its App Profile, check whether it uses the default or a custom profile, then change that profile's setting.
 
 ## Is SuperKey required?
 
-No. Trusted official package/signature authentication is the default. SuperKey serves custom signing and private-manager deployments. Leave it empty on a first installation.
+No. The official Manager uses APK identity authentication. Setting a SuperKey does not automatically disable signature fallback. It authenticates a manager UID, not ordinary app root requests. See [SuperKey](/en/manager/superkey/).
 
-## Does SuperKey replace APK signatures?
+## Do compatibility overrides change the kernel?
 
-Not by default. Signature authentication may remain after setting a key. YukiSU submits SuperKey through `prctl` to establish the manager UID; it is not the KernelPatch/APatch NR45 general SuperCall credential. Read [SuperKey authentication](/en/manager/superkey/).
+No. They change compatibility values exposed to particular consumers, not the real implementation or version. They do not ensure third-party private commands work. Global module-installation overrides and per-signature manager overrides are separate settings.
 
-## Embedded vs installed `ksud`?
+## Does root work without YukiZygisk?
 
-One binary ships in the APK and another is installed at `/data/adb/ksud`. The home page compares their actual ELF content and offers manual synchronization; cold-start auto-sync is off by default. Runtime replacement also raises an integrity alert. Either synchronization path changes only `ksud`, not the LKM, boot image or device reboot state.
+Yes. Basic root, App Profile, and ordinary modules do not require it. Enable it for ordinary Zygisk or Native ZN modules, using the Android version, ABI, and target processes specified by the module author.
 
-## Does every module need MetaModule?
+## Are YukiZygisk safe mode and module crash protection the same?
 
-No. Script-only, `system.prop`, `sepolicy.rule` and independent WebUI modules may not need mounting. Modules that provide files under `/system`, `/vendor` and similar paths usually require a compatible active MetaModule.
+No. Repeated PID changes for the same Zygote trigger global injection protection at the kernel threshold. When crash evidence meets the correlation conditions, module crash protection suspends the affected ordinary Zygisk module's later injection for this boot. It does not suspend Native ZN modules or unload code already loaded. After a process exits, inspect the exit code, crash log, and suspended-module list before choosing which module to disable. See [Features and status](/en/yukizygisk/features/).
 
-## Why did an installed module not mount files?
+## Can a soft reboot replace a full reboot?
 
-Installed only means content reached the module directory. Check for a `system/` tree, absence of `skip_mount`, active MetaModule state, pending update/removal and successful `metamount.sh`. See [Module system](/en/modules/overview/).
+No. It does not reload the kernel or rerun the bootloader, early boot configuration, or preinit. v1.8.0 allows emulated soft reboot when the daemon confirms recovery support, including restoring Kasumi rules. If a prerequisite fails, Manager shows the reason. After acceptance, wait for the final recovery result. On failure, retain logs and reboot fully. See [Soft reboot](/en/manager/soft-reboot/).
 
-## Is YukiSU MetaModule the same as KernelSU?
+## Must I delete every module when switching root solutions?
 
-The public protocol is shared. YukiSU follows official KernelSU MetaModule interfaces, scripts and lifecycle, so an existing backend can usually remain when its device, version and interface requirements still match. Its real mount behavior and every module's Android/ABI/version requirements still need validation.
+Back up configuration and stock images before changing root solutions; do not start by deleting the module directory, follow the [KernelSU](/en/guide/switch/kernelsu/), [Magisk](/en/guide/switch/magisk/), or [APatch](/en/guide/switch/apatch/) migration guide, and verify each backend and module.
 
-## What is Jailbreak mode?
+## Do hiding features guarantee passing detection?
 
-It is YukiSU Manager's name for upstream-compatible late-load: load a matching-KMI LKM after Android has booted and establish YukiSU for the current boot. The userspace flow is implemented in C++, requires SELinux Permissive and cannot provide PID 1 early stages. See [Jailbreak mode](/en/guide/jailbreak-mode/).
+No. Property views, UTS, mount cleanup, and SELinux Hide have limited scopes. They do not relock the bootloader or alter remote or hardware-backed attestation results.
 
-## Must I remove every module before switching from KernelSU?
+## What if the device cannot boot?
 
-No blanket removal is needed. For built-in KernelSU, restore stock boot but do not reboot before using the still-rooted current session to install YukiSU. From KernelSU LKM, no image restoration is needed. MetaModule and ordinary modules that still satisfy the shared protocol and device/version requirements can usually remain, but verify each layer after reboot. See [Switch from KernelSU](/en/guide/switch/kernelsu/).
-
-## Can Magisk or KernelSU modules be reused directly?
-
-Do not decide from ZIP layout alone. Installers, mount backends, private tools, WebUI APIs, Android versions and ABIs create dependencies. Follow explicit author support and single-module testing.
-
-## What is YukiZygisk?
-
-YukiZygisk is YukiSU's optional built-in Zygisk environment. YukiSU handles Zygote injection and module loading directly, so it can use modules compatible with Zygisk Next without Magisk or a separate Zygisk Next installation.
-
-## Does YukiSU work with YukiZygisk disabled?
-
-Yes. Root grants, App Profile, ordinary-module scripts and MetaModule mounts do not depend on YukiZygisk.
-
-## Does YukiZygisk guarantee every module?
-
-No. The standard API is the compatibility target; actual behavior depends on Android version, 32/64-bit ABI, target process, app version and module implementation. Discovery or injection status is not proof of feature success.
-
-## Why did YukiZygisk enter safe mode?
-
-The kernel tracks PIDs by Zygote socket name. When PID replacement for one name reaches three, YukiZygisk enters global injection safe mode. The counter proves process-generation replacement, not the cause of death or a responsible module. Export diagnostics around the trigger and interpret them with [Features and status](/en/yukizygisk/features/).
-
-## Is App Profile exclusive to YukiSU?
-
-No. Official KernelSU also has App Profile. YukiSU maintains its own implementation across kernel, userspace and manager, so validate UID, capabilities, SELinux and namespace behavior here.
-
-## Must LKM be updated immediately after the manager?
-
-Not necessarily. Manager, embedded/installed `ksud`, LKM, installation layout, MetaModule and modules have separate state. The home page can synchronize `ksud` alone; kernel or early-boot fixes require another LKM patch. Do not assume old combinations across a UAPI or boot-layout change are compatible.
-
-## What should I do after an OTA?
-
-Identify A/B support, whether OTA finished, and current/inactive slots. The manager reads target KMI from `boot` in the inactive slot. Ramdisk mode selects a target partition from that layout; ImgPatch writes only `boot` in the target slot. Never guess a slot or patch a new slot with an old-firmware image.
-
-## Does YukiSU guarantee passing integrity/root checks?
-
-No. It provides root, authorization, modules and optional extensions. Detection policies change and results also depend on bootloader state, ROM, modules and device configuration.
-
-## What should an issue include?
-
-Provide build fingerprint, kernel/KMI, LKM/manager/`ksud` state (preserving installed-side “Unknown” on an integrity mismatch), partition/slot, module versions, last change and first useful error. Use manager-exported diagnostics for YukiZygisk. See [How to ask](/en/troubleshoot/asking/).
+Distinguish image/LKM, ordinary module, and preinit failures, then follow [Rescue and recovery](/en/guide/rescue-bootloop/). Include complete versions, partition/slot, the last change, and the first useful error when [reporting a problem](/en/troubleshoot/asking/).
