@@ -5,7 +5,7 @@ title: Native ZN API
 
 # Native ZN API
 
-Native ZN loads a native library into a selected executable process. It does not depend on Zygote specialization or use ordinary `zygisk.hpp` `ModuleBase`. Its target manifest, entry and companion are defined by [`zygisk_next_api.h`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/include/zygisk_next_api.h).
+Native ZN loads a native library into a selected executable process. It does not depend on Zygote specialization or use ordinary `zygisk.hpp` `ModuleBase`. Its target manifest, entry and companion are defined by [`zygisk_next_api.h`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/include/zygisk_next_api.h).
 
 ::: warning For native module developers
 Native ZN runs module code inside native processes. A wrong target, ABI or hook can crash a target or system service. Prepare a stock boot image and test one module at a time on a recoverable device. A Native-target exit does not increment the Zygote restart counter; only resulting Zygote restarts count toward injection safe mode.
@@ -63,6 +63,8 @@ Some native services start before `post-fs-data`, too early for a `zygiskd` scan
 3. the kernel reads it during the next LKM initialization to match early execs;
 4. after `post-fs-data`, daemons establish live inventory and runtime reporting.
 
+v1.9.0 uses version 3 of the early snapshot. Update the LKM and `ksud` together. Older LKMs cannot read snapshots generated for this release.
+
 Only valid entries **without `companion`** enter the snapshot; a module that needs a companion must wait for `zygiskd`. If the snapshot is missing, has the wrong format/version, records a linker size that no longer matches, or could not obtain required symbol offsets when generated, early Native is disabled for that boot. Check the snapshot error in diagnostics, confirm that YukiZygisk and `early_load` are enabled, regenerate the snapshot, and reboot.
 
 When updating or disabling modules:
@@ -73,11 +75,11 @@ When updating or disabling modules:
 
 ## Loading and process exits
 
-In v1.8.0, Native modules always load through Bionic `__loader_android_dlopen_ext` with `RTLD_NOW | RTLD_LOCAL` and `ANDROID_DLEXT_USE_LIBRARY_FD`. The caller is anchored to identity-checked resident libc; that system linker namespace resolves dependencies. YukiLinker and anonymous-memory settings neither change the Native module loader nor anonymize its Bionic mappings.
+Native ZN modules use the YukiLinker SDK’s system mode in v1.9.0. Android’s Bionic loader manages their libraries and dependencies. The Manager’s YukiLinker and anonymous-memory settings apply to ordinary Zygisk modules.
 
 Once a module enters `onModuleLoaded`, its library handle is retained until process exit for later callbacks and `libdl` calls. Each module directory ID initializes once per process. Reusing the same file identity or Bionic handle under another module ID is rejected. Restart the target after updating, disabling or removing a module; regenerate the snapshot and fully reboot for early targets.
 
-For load failures, find `native caller` and `Bionic load failed` in core logs. They identify the failing stage: `linker`, `anchor`, `revalidate` or `load`. For `load` failures, also inspect dependency, symbol and linker-namespace errors.
+If a module fails to load, check that the running LKM, installed `ksud`, and Manager come from the same release. Look up the module ID in the load log for its backend and any error from the system loader.
 
 Current status separates injection results from process `running` / `exited` / `unknown` and can correlate kernel exit history with tombstones. A normal exit preserves the earlier successful injection state. For a crash, inspect exit records and the tombstone fault stack. Ordinary-Zygisk automatic crash isolation does not apply to Native modules.
 
@@ -127,7 +129,7 @@ The v4 function table provides:
 
 Hook calls return `ZN_SUCCESS` (0) or `ZN_FAILED` (1). Check every result and keep the target library, replacement code and original-function storage valid while the hook is in use. Pair every resolver with `freeSymbolResolver`; do not retain callback-owned symbol pointers past their lifetime.
 
-### PLT and inline-hook requirements in v1.8.0
+### PLT and inline-hook requirements
 
 YukiPLT replaces the PLT backend without changing the ZN API v4 layout. `pltHook` requires a unique, non-null, enumerable `JUMP_SLOT` and a single owner per target slot. Repeating the same image/symbol/handler verifies the existing hook and returns its saved original without creating another hook chain. A competing handler fails.
 
@@ -181,9 +183,9 @@ After status becomes `injected`, test the functionality the module is intended t
 
 ## Source references
 
-- [Native module loading](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/yukizncore.cpp)
-- [Snapshot generation](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yukizygisk_snapshot.cpp)
-- [Manifest parsing](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/daemon/native_modules.hpp)
+- [Native module loading](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/yukizncore.cpp)
+- [Snapshot generation](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/yukizygisk_snapshot.cpp)
+- [Manifest parsing](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/daemon/native_modules.hpp)
 
-- [Native Bionic loader](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/native_bionic.cpp)
-- [Module and companion binding](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/native_module_binding.hpp)
+- [Native Bionic loader](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/native_bionic.cpp)
+- [Module and companion binding](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/native_module_binding.hpp)

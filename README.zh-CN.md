@@ -1,12 +1,14 @@
 # YukiSU 文档站
 
+在线阅读：[简体中文](https://yukisu.rouyashiki.org/) · [English](https://yukisu.rouyashiki.org/en/)
+
 网站使用 [VuePress](https://vuepress.vuejs.org/) 和 [vuepress-theme-plume](https://github.com/pengzhanbo/vuepress-theme-plume) 构建。
 
 产品功能与兼容性描述必须能由文档标注版本的 [YukiSU 源码](https://github.com/Rouyashiki/YukiSU)证实。未经核对，不应直接复制其他 KernelSU 分支的行为。
 
 ## 文档基线
 
-本站以 2026-11-02 发布的 [YukiSU v1.8.0](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.8.0) 为基线，对应源码 [`9d046af4`](https://github.com/Rouyashiki/YukiSU/tree/9d046af49e2a43120a05a06d7c9dbc76ca824d76)，管理器版本码为 10670。升级步骤与配置迁移见[更新指南](docs/guide/update.md)。后续开发分支的变化须注明版本，不能直接写成 v1.8.0 已有功能。
+本文档对应 [YukiSU v1.9.0](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.9.0)，发布于 2026 年 11 月 16 日，管理器版本码为 10745。维护文档时请核对[这次发布的源码](https://github.com/Rouyashiki/YukiSU/tree/a66faee724c6ff2d79757cb1cc8030fdf71a30f8)。旧管理器用户请先看[更新指南](docs/guide/update.md)，里面说明了换包名后的安装顺序和哪些数据需要自己保留。
 
 ## 内容维护规则
 
@@ -49,7 +51,7 @@ pnpm install --frozen-lockfile --prod=false
 pnpm docs:build
 ```
 
-将 `docs/.vuepress/dist/` 中的全部文件作为静态站点发布到 `https://yukisu.anatdx.com/`。当前 `base` 为 `/`，不是子路径部署；更换域名时还要修改 `docs/.vuepress/config.ts` 的 `hostname` 并重新构建，使 canonical URL、站点地图和 robots.txt 一致。
+站点部署在域名根路径。将 `docs/.vuepress/dist/` 的内容发布到 [yukisu.rouyashiki.org](https://yukisu.rouyashiki.org/)。更换域名时，修改 `docs/.vuepress/config.ts` 中的 `hostname` 并重新构建，页面地址、站点地图和 robots.txt 会随之更新。
 
 发布时整体替换旧构建目录，避免已删除的页面和旧搜索资源残留。保留目录结构，使 `/guide/intro/` 等路径访问对应的 `index.html`；不存在的路径应返回 `404.html` 和 HTTP 404。
 

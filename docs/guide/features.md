@@ -44,7 +44,7 @@ YukiSU 提供应用授权、内置模块挂载、YukiZygisk 和启动镜像工�
 
 ID 6 不会自动给 shell 授权，也不等于 ADB Root。它在 shell 已获 Root 授权的前提下，检查进程祖先是否来自 `adbd` 或 YukiSU root domain。
 
-v1.8.0 不再使用 ID 5 和 100：WebView 卸载改到“超级用户 → WebView Zygote”的非 Root 配置；“增强安全”已移除。不要在启动配置或脚本中继续设置这两个编号。
+旧版使用的 ID 5 和 100 已经停用。WebView 卸载改到“超级用户 → WebView Zygote”的非 Root 配置；“增强安全”已移除。不要在启动配置或脚本中继续设置这两个编号。
 
 ## 运行时设置与启动配置
 
@@ -66,7 +66,7 @@ v1.8.0 不再使用 ID 5 和 100：WebView 卸载改到“超级用户 → WebVi
 
 Root 授权控制应用能否提权；[App Profile](/manager/app-profile/)进一步约束提权后的身份和环境。撤销授权影响新的请求，已经取得 Root 的进程需退出后再验证。
 
-v1.8.0 的默认 Root SELinux 域为 `u:r:ksu:s0`，默认启用 Feature 102。已有自定义域和逐应用标志继续保留；升级后先测试现有授权，不需要批量重建 Profile。
+默认 Root SELinux 域为 `u:r:ksu:s0`，默认启用 Feature 102。已有自定义域和逐应用标志继续保留；升级后先测试现有授权，不需要批量重建 Profile。
 
 官方管理器默认通过 APK 身份认证；[SuperKey](/manager/superkey/)和动态管理器提供额外认证入口。动态管理器的兼容版本覆盖只改变它看到的版本值。第三方管理器调用了 YukiSU 没有实现的命令时，改版本值也无法运行该命令。
 
@@ -86,6 +86,6 @@ v1.8.0 的默认 Root SELinux 域为 `u:r:ksu:s0`，默认启用 Feature 102。�
 
 ## 源码
 
-- [Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/feature.h)
-- [Feature 保存与恢复](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp)
-- [挂载后端选择](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/metamodule.cpp)
+- [Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/feature.h)
+- [Feature 保存与恢复](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/core/feature.cpp)
+- [挂载后端选择](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/metamodule.cpp)

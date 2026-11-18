@@ -27,7 +27,7 @@ android17-6.18
 ## Windows
 
 ```powershell
-git clone --branch v1.8.0 --recurse-submodules https://github.com/Rouyashiki/YukiSU
+git clone --branch v1.9.0 --recurse-submodules https://github.com/Rouyashiki/YukiSU
 cd YukiSU
 .\scripts\build.bat --help
 .\scripts\build.bat -k android16-6.12 --clean
@@ -48,7 +48,7 @@ SDK 从 `ANDROID_SDK_ROOT` / `ANDROID_HOME`、`manager/local.properties` 与少�
 ## Linux / macOS
 
 ```sh
-git clone --branch v1.8.0 --recurse-submodules https://github.com/Rouyashiki/YukiSU
+git clone --branch v1.9.0 --recurse-submodules https://github.com/Rouyashiki/YukiSU
 cd YukiSU
 ./scripts/build.sh --help
 ./scripts/build.sh -k android16-6.12 --clean
@@ -62,7 +62,7 @@ cd YukiSU
 
 Manager 构建会根据 Maven 依赖与原生子模块版本生成开源许可证清单和文本。生成或校验失败时，按报错补齐子模块、依赖登记或许可证来源，再重新构建。
 
-v1.8.0 使用 YukiPLT 作为 PLT 依赖；Zygote 与 Native core 分别静态链接 `userspace/zygisk/third_party/yukiplt` 的私有副本。不要复用旧 LSPlt 构建目录。切换依赖版本后先初始化子模块，再用 `--clean` 完整构建。
+v1.9.0 的 YukiZygisk 同时依赖 YukiLinker SDK 和 YukiPLT。两者都在 `userspace/zygisk/third_party/` 下。刚切换到这个 tag 时，先同步子模块，再用 `--clean` 构建，避免混用不同版本。
 
 ## 常用选项
 
@@ -118,11 +118,11 @@ LKM 数字版本按 Git 提交计数生成，完整格式是 `v<version>-<hash>[
 
 ## 源码入口
 
-- [Windows 构建脚本](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/scripts/build.ps1)
-- [Linux/macOS 构建脚本](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/scripts/build.sh)
-- [CI KMI 矩阵](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/.github/workflows/build-lkm.yml)
-- [`ksud` 资源打包器](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/scripts/embed_assets.py)
-- [工具链版本](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/gradle/libs.versions.toml)
-- [许可证生成](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/build.gradle.kts)
+- [Windows 构建脚本](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/scripts/build.ps1)
+- [Linux/macOS 构建脚本](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/scripts/build.sh)
+- [CI KMI 矩阵](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/.github/workflows/build-lkm.yml)
+- [`ksud` 资源打包器](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/scripts/embed_assets.py)
+- [工具链版本](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/gradle/libs.versions.toml)
+- [许可证生成](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/build.gradle.kts)
 
-- [YukiPLT 集成构建](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/CMakeLists.txt)
+- [YukiPLT 集成构建](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/CMakeLists.txt)

@@ -5,7 +5,7 @@ title: Kasumi 与挂载配置
 
 # Kasumi 与挂载配置
 
-YukiSU v1.8.0 内置 Kasumi API 18 和用户空间 Kagami 控制器。首页右上角的 Kasumi 入口提供状态、设置、规则与日志四页；模块卡片另有逐模块挂载配置。
+v1.9.0 使用 **Kasumi API 19**。在管理器首页点右上角的 Kasumi，可以查看内核版本、修改设置、管理规则和查看日志。要改某个模块的挂载方式，请打开该模块的卡片。
 
 ## 先区分三种控制
 
@@ -23,9 +23,9 @@ YukiSU v1.8.0 内置 Kasumi API 18 和用户空间 Kagami 控制器。首页右�
 
 先核对内核能力是否可用、协议是否兼容，以及版本。状态页还显示存储/挂载基础信息、模块实际策略与活动视图；修改模块模式后完整重启，在状态页查看该模块的实际策略。
 
-安装 v1.8.0 APK 不会替换旧 LKM 或正在运行的控制器。提示接口不兼容时，同步同版本 `ksud`、安装匹配 LKM 并完整重启。
+API 19 会先检查控制器和内核的协议版本。若状态页显示不兼容，先核对 `ksud` 和实际运行的 LKM，都更新到 v1.9.0 后完整重启。用新版 APK 打开旧内核时，反复点保存也不会生效。[升级步骤](/guide/update/)
 
-API 18 增加逐规则全局作用域；只有内核报告 `rule_bypass` 能力时，管理器才允许开启。软重启还单独检查 `safe_rule_retire` 等能力，不能只按 API 版本判断，见[软重启](/manager/soft-reboot/)。
+更新一批规则时，Kasumi 会先准备好整批修改，再一起提交。如果这一批提交失败，原有规则继续生效。软重启还有自己的恢复条件，可以在[软重启](/manager/soft-reboot/)中查看。
 
 ## 挂载策略与逐模块规则
 
@@ -37,7 +37,7 @@ API 18 增加逐规则全局作用域；只有内核报告 `rule_bypass` 能力�
 
 ## 内核视图与隐藏规则
 
-细项由运行内核返回的能力决定，包括挂载隐藏、maps 映射、OverlayFS xattr 隐藏、statfs 视图和 SELinux Guard。v1.8.0 已移除“激进挂载隐藏”，不要继续按旧教程配置该模式。
+细项由运行内核返回的能力决定，包括挂载隐藏、maps 映射、OverlayFS xattr 隐藏、statfs 视图和 SELinux Guard。“激进挂载隐藏”已在 v1.8.0 移除，不要继续按旧教程配置该模式。
 
 **SELinux Guard** 默认关闭，是对 SELinux context 写入进行有界时序补偿的实验性选项。它不会切换 Enforcing/Permissive，也不会替代 App Profile 的 domain 和 SELinux 规则。排查这类兼容问题时再开启，并对比目标应用行为。
 
@@ -65,7 +65,7 @@ Kasumi 拒绝与已识别的冲突组件同时启用：`kasumi_lkm`、`pathmask`
 
 ## 重启与排障
 
-v1.8.0 在满足能力和恢复条件时允许 Kasumi 软重启，不再仅因 Kasumi 启用而阻止。以管理器显示的 daemon 支持状态为准；不可用时按[软重启](/manager/soft-reboot/)中的具体原因处理。关闭 Feature 106 后，要完全退出本次内核生命周期仍须完整重启；late-load 的临时 Root 也随完整重启结束。
+Kasumi 开启时，只要支持恢复，仍可使用软重启。以管理器显示的 daemon 支持状态为准；不可用时按[软重启](/manager/soft-reboot/)中的具体原因处理。关闭 Feature 106 后，要完全退出本次内核生命周期仍须完整重启；late-load 的临时 Root 也随完整重启结束。
 
 提交问题时同时提供：
 
@@ -78,6 +78,6 @@ Kasumi 日志页提供刷新和清空。清空前先保存相关日志；截图�
 
 ## 源码
 
-[Kasumi 界面](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/KasumiConfig.kt)、[设置与能力](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/KasumiSettings.kt)、[控制器](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/util/KasumiManager.kt)、[内核生命周期](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/kasumi/core/kasumi_bootstrap.c)、[软重启限制](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/init_event.cpp)。
+[Kasumi 界面](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/kasumi/KasumiConfig.kt)、[设置与能力](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/kasumi/KasumiSettings.kt)、[控制器](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/kasumi/util/KasumiManager.kt)、[内核生命周期](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/kasumi/core/kasumi_bootstrap.c)、[软重启限制](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/init_event.cpp)。
 
-[kasumi.h](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/kasumi.h), [KasumiMountConfigDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/KasumiMountConfigDialog.kt), [sucompat_module_guard.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/feature/sucompat_module_guard.c), [kasumi_config_guard.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/kasumi/core/kasumi_config_guard.c), [KasumiConflictDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/component/KasumiConflictDialog.kt).
+[kasumi.h](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/kasumi.h), [KasumiMountConfigDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/kasumi/KasumiMountConfigDialog.kt), [sucompat_module_guard.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/feature/sucompat_module_guard.c), [kasumi_config_guard.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/kasumi/core/kasumi_config_guard.c), [KasumiConflictDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/component/KasumiConflictDialog.kt).

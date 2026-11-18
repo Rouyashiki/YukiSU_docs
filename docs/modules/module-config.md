@@ -55,7 +55,7 @@ ksud module config get settings
 - `get` 输出值后额外添加一个换行；shell 的 `$(...)` 会去掉末尾换行，不适合逐字节取回多行文本。
 - `list` 是便于查看的文本，值可以跨行。不要把输出直接 `source` 或 `eval`。
 
-文件位于 `/data/adb/ksu/module_configs/<目录 ID>/persist.config` 与 `tmp.config`。v1.8.0 使用带长度字段的二进制格式，不要用文本编辑器或 `sed` 修改。旧版 C++ 实现写入的 `key=value` 文件仍可读取，下一次保存时转为新格式。通过命令读写，检查退出码；写入失败时不要把界面显示为保存成功。
+文件位于 `/data/adb/ksu/module_configs/<目录 ID>/persist.config` 与 `tmp.config`。配置文件使用带长度字段的二进制格式，不要用文本编辑器或 `sed` 修改。旧版 C++ 实现写入的 `key=value` 文件仍可读取，下一次保存时转为新格式。通过命令读写，检查退出码；写入失败时不要把界面显示为保存成功。
 
 ## 接管 YukiSU 功能
 
@@ -104,4 +104,4 @@ ksud feature get sulog --config
 
 停止托管时，删除或关闭相应 `manage.*` 配置；如果有临时覆盖，先清除它。禁用或卸载模块也会使后续检查不再承认其管理权。这些操作不会撤销已经设置的内核值：先按模块提供的恢复步骤处理，再重启并检查功能状态。
 
-源码：[配置实现](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module_config.cpp)、[命令参数](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/cli_args.cpp)、[功能托管](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp)、[模块扫描](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module.cpp)、[安装提示](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/assets/installer.sh)。
+源码：[配置实现](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module_config.cpp)、[命令参数](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/cli_args.cpp)、[功能托管](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/core/feature.cpp)、[模块扫描](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module.cpp)、[安装提示](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/assets/installer.sh)。

@@ -19,7 +19,7 @@ title: Lua 插件管理
 - 搜索，并选择“已启用优先”排序；
 - 下拉刷新实际 `ksud plugin list` 状态；
 - 启用或停用插件；
-- 在 manifest 声明 Action 时运行 Action；
+- 运行插件的 Action，旧版清单也可以从“运行”入口尝试。
 - 运行 manifest 声明的快捷操作；
 - 编辑 manifest 声明的配置字段；
 - 查看或清除独立插件日志；
@@ -39,12 +39,14 @@ manifest 无效时，卡片显示错误并禁用 Action/快捷操作。重新安
 
 ## Action、快捷操作与配置
 
-- **Action** 只在插件实际声明 Action 时显示；
+- **Action** 用来运行插件的 `action` 回调。旧插件没写操作信息时，管理器也会显示“运行”。点开才会尝试执行，缺少回调时会提示原因。
 - **快捷操作** 调用 manifest 指定的 Lua 函数；
 - **配置** 把页面字段保存给该插件；只有实现了运行时重读的插件会立即使用新值，其余按插件说明重新运行 Action、重启 daemon 或完整重启；
 - **日志** 是插件自己的记录，不等于完整 `ksud`、内核或 logcat 日志。
 
 Action 成功表示该次回调正常返回。运行后检查它要修改的设置或文件；启动回调与 daemon 的结果另见插件日志。停用或卸载不会自动撤销插件已经修改的系统文件和设置，恢复步骤由插件提供。
+
+在配置窗口点“恢复默认”后，可以先看改动，再点保存。点取消会保留原来的值。如果只有部分字段保存失败，管理器会列出对应的键，并重新读取已经写入的值。
 
 ## 插件仓库
 
@@ -78,4 +80,4 @@ YukiSU 不验证仓库插件的作者身份或发布签名。HTTPS 加密传输�
 
 ## 源码
 
-[Plugin.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Plugin.kt), [plugin.cpp](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/plugin.cpp).
+[Plugin.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Plugin.kt), [plugin.cpp](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/plugin/plugin.cpp).

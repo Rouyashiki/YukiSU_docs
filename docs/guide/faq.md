@@ -5,7 +5,11 @@ title: 常见问题
 
 # 常见问题
 
-这里回答安装、模块、授权和更新中最常见的问题。操作报错时，转到[常见问题排查](/troubleshoot/common/)。
+安装、授权或更新时遇到报错，可以先按症状查看[常见问题排查](/troubleshoot/common/)。
+
+## 升级后为什么有两个 YukiSU 图标？
+
+v1.9.0 换了包名和签名，Android 会保留旧应用。先打开版本码为 `10745` 的新版，确认首页识别到配套的 LKM、`ksud` 和原来的模块，再决定是否卸载旧 APK。两个应用各有自己的设置和私有备份，旧仓库地址也要自己添加。[从旧版升级](/guide/update/)
 
 ## 哪些设备可以使用？
 
@@ -49,11 +53,11 @@ APK、`/data/adb/ksud` 和正在运行的 LKM 是不同组件。同步 `ksud` �
 
 ## WebView 卸载和“增强安全”开关去哪了？
 
-v1.8.0 将 WebView 卸载移到“超级用户 → WebView Zygote”的非 Root 配置，修改后重新启动受影响的进程；要重建共享 WebView Zygote，完整重启设备。Feature 5 已停用，“增强安全”及 Feature 100 已移除。旧教程中的这两个编号不再适用。见[App Profile](/manager/app-profile/)。
+从 v1.8.0 起，要调整 WebView 的模块卸载，请打开“超级用户 → WebView Zygote”的非 Root 配置。修改后重新启动受影响的进程。要重建共享的 WebView Zygote，请完整重启设备。Feature 5 已停用，“增强安全”及 Feature 100 已移除。旧教程中的这两个编号不再适用。见[App Profile](/manager/app-profile/)。
 
 ## 升级后默认 Root 域和防逃逸设置为什么变了？
 
-v1.8.0 默认使用 `u:r:ksu:s0`，首次迁移将 Feature 102 设为开启。已有自定义域和逐应用标志继续保留，旧 `su` 策略保留兼容处理。需要调整时打开该应用的 App Profile，先确认使用的是默认配置还是自定义配置，再修改对应设置。
+从 v1.8.0 起，YukiSU 默认使用 `u:r:ksu:s0`，首次迁移将 Feature 102 设为开启。已有自定义域和逐应用标志继续保留，旧 `su` 策略保留兼容处理。需要调整时打开该应用的 App Profile，先确认使用的是默认配置还是自定义配置，再修改对应设置。
 
 ## 已给 shell Root，为什么仍被拒绝？
 
@@ -77,7 +81,7 @@ v1.8.0 默认使用 `u:r:ksu:s0`，首次迁移将 Feature 102 设为开启。�
 
 ## 软重启能代替完整重启吗？
 
-不能。软重启不会重新加载内核或执行 bootloader、早启动配置和 preinit。v1.8.0 在 daemon 确认支持恢复后允许模拟软重启，并恢复 Kasumi 规则；条件不满足时会显示原因。请求已接受后仍要等待最终恢复结果，失败时保存日志并完整重启。见[软重启](/manager/soft-reboot/)。
+不能。软重启不会重新加载内核或执行 bootloader、早启动配置和 preinit。设备上的 `ksud` 确认支持恢复后，才会接受模拟软重启，并恢复 Kasumi 规则；条件不满足时会显示原因。请求已接受后仍要等待最终恢复结果，失败时保存日志并完整重启。见[软重启](/manager/soft-reboot/)。
 
 ## 切换 Root 方案要清空所有模块吗？
 

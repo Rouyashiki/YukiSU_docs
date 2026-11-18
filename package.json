@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "YukiSU docs",
   "packageManager": "pnpm@11.20.0",
-  "author": "Anan <an@anatdx.com>",
+  "author": "Rouyashiki Developers",
   "license": "MIT",
   "scripts": {
     "docs:build": "vuepress build docs --clean-cache --clean-temp",

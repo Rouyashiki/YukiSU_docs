@@ -16,8 +16,8 @@ export default defineThemeConfig({
   copyright: {
     license: 'CC-BY-NC-SA-4.0',
     author: {
-      name: 'Anatdx',
-      url: 'https://github.com/Anatdx',
+      name: 'Rouyashiki Developers',
+      url: 'https://github.com/Rouyashiki',
     },
   },
 
@@ -26,7 +26,7 @@ export default defineThemeConfig({
 
   footer: {
     message: 'Powered by <a target="_blank" href="https://v2.vuepress.vuejs.org/">VuePress</a> & <a target="_blank" href="https://theme-plume.vuejs.press">vuepress-theme-plume</a>',
-    copyright: 'Anatdx',
+    copyright: 'Rouyashiki Developers',
   },
 
   locales: {

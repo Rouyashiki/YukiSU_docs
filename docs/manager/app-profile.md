@@ -7,7 +7,9 @@ title: App Profile
 
 超级用户开关控制 Android UID 的 Root 授权。App Profile 设置获准后的 UID/GID、capability、SELinux domain 与 mount namespace，也设置未获 Root 应用的模块卸载策略。
 
-完整内核 ABI 在 [`uapi/app_profile.h`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/app_profile.h)。当前版本是 `KSU_APP_PROFILE_VER 4`，不要用旧教程里的结构大小或字段顺序直接写配置。
+完整内核 ABI 在 [`uapi/app_profile.h`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/app_profile.h)。当前版本是 `KSU_APP_PROFILE_VER 4`，不要用旧教程里的结构大小或字段顺序直接写配置。
+
+想给刚装好的应用授权，可以先看超级用户页的“最近安装或更新”分组。过去一小时内新安装或更新的应用会出现在这里。
 
 ## 策略按 UID 生效
 
@@ -29,7 +31,7 @@ Android 允许多个包共享一个 UID。超级用户页把共享 UID 的包合
 
 ### 默认
 
-使用内核默认 Root Profile：UID/GID 0、默认组、完整 capability、YukiSU `ksu` SELinux domain（`u:r:ksu:s0`），并继承调用进程的 mount namespace。全局“默认防逃逸（no-new-privs）”在 v1.8.0 默认开启，默认 Profile 的应用继承该限制。升级迁移会启用这一全局默认值；旧自定义 Profile 的 domain 和防逃逸标志保持原设置。
+使用内核默认 Root Profile：UID/GID 0、默认组、完整 capability、YukiSU `ksu` SELinux domain（`u:r:ksu:s0`），并继承调用进程的 mount namespace。全局“默认防逃逸（no-new-privs）”默认开启，默认 Profile 的应用继承该限制。升级迁移会启用这一全局默认值；旧自定义 Profile 的 domain 和防逃逸标志保持原设置。
 
 一般 Root 工具使用默认模式。需要限制身份或权限时再选择自定义，并为工具保留实际使用的组和 capability。
 
@@ -94,7 +96,7 @@ Profile 在应用进程启动/特化或发起提权时进入相应路径。修�
 
 ## WebView Zygote
 
-v1.8.0 把原 Feature 5 移到超级用户页的 **WebView Zygote** 条目（UID 1053）。进入该条目的 App Profile，选择默认 Non-root 策略，或用自定义策略开启/关闭“卸载模块”。该条目不会被“隐藏系统应用”过滤掉，也不能授予 Root 或动态管理器身份。
+从 v1.8.0 起，原 Feature 5 的设置移到了超级用户页的 **WebView Zygote** 条目（UID 1053）。进入该条目的 App Profile，选择默认 Non-root 策略，或用自定义策略开启/关闭“卸载模块”。该条目不会被“隐藏系统应用”过滤掉，也不能授予 Root 或动态管理器身份。
 
 它使用与其他 Non-root Profile 相同的卸载逻辑，仍要求全局 Kernel Umount 开启；默认模式跟随“默认卸载模块”。旧 Feature 5 配置不会继续生效，升级后请在这里重新选择所需策略。保存后完整重启，让 WebView Zygote 和之后创建的 WebView 进程使用新策略。
 
@@ -151,8 +153,8 @@ SuperKey 的配置与认证步骤见 [SuperKey 认证](/manager/superkey/)。
 
 ## 源码
 
-[AppProfile.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/AppProfile.kt)、[DynamicManagerCompatDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/component/DynamicManagerCompatDialog.kt)、[KsuCli.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/KsuCli.kt)。
+[AppProfile.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/AppProfile.kt)、[DynamicManagerCompatDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/component/DynamicManagerCompatDialog.kt)、[KsuCli.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/KsuCli.kt)。
 
-[allowlist.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/policy/allowlist.c), [selinux.h](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/selinux/selinux.h), [KsuService.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/KsuService.kt), [AllowlistPlan.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/module/AllowlistPlan.kt), [AllowlistRestore.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/module/AllowlistRestore.kt).
+[allowlist.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/policy/allowlist.c), [selinux.h](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/selinux/selinux.h), [KsuService.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/KsuService.kt), [AllowlistPlan.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/module/AllowlistPlan.kt), [AllowlistRestore.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/module/AllowlistRestore.kt).
 
-[SuperUserViewModel.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/viewmodel/SuperUserViewModel.kt), [AllowlistBackup.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/module/AllowlistBackup.kt).
+[SuperUserViewModel.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/viewmodel/SuperUserViewModel.kt), [AllowlistBackup.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/module/AllowlistBackup.kt).

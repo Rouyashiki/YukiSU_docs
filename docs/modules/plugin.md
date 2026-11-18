@@ -65,11 +65,13 @@ return {
 
 每次回调都会新建 Lua state 并重新加载入口。跨回调状态写进插件配置或数据文件，Lua 全局变量不会保留。
 
+移植 FolkPatch 或 FinaSU 插件时，可以复用两者共有的 Lua 接口。先确认源码能在 Lua 5.5 下运行。Lua 5.4 的预编译字节码和原生扩展需要按当前运行时重新构建。[插件兼容说明](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/docs/lua-plugin-compatibility.md)
+
 ## `plugin.json` 能声明什么
 
 除名称、版本、作者、说明、许可证与入口外，清单还支持：
 
-- `min_version`：最低 `ksud` version code；
+- `min_version` 可以省略。填写时使用非负整数，`ksud plugin list` 会输出这个值，安装和运行时不强制检查。
 - `depends`：插件 ID 数组；依赖必须已安装且启用，并按拓扑顺序执行；
 - `descriptions`：按语言标签提供本地化说明；
 - `callbacks` 与 `has_action`：让管理器识别可用动作；
@@ -87,7 +89,7 @@ return {
 | `service` | service stage | 独立后台 worker |
 | `boot_completed` | boot-completed stage | 独立后台 worker |
 | `action` 或其他手动回调 | 管理器/`ksud plugin run` | 阻塞等待，单次上限 300 秒 |
-| `main` | service stage 自动发现 | 以 1 秒间隔的托管 daemon 回调启动 |
+| `main` | 省略 `callbacks` 时自动发现，显式列出回调时须包含 `main` | 以 1 秒间隔的托管 daemon 回调启动 |
 
 周期任务使用 `start_daemon("callback", seconds)`。`ksud` 会管理该任务，并在禁用或卸载插件时停止它。
 
@@ -124,7 +126,7 @@ late-load 只派发后续的 `service` 和 `boot_completed`，不补跑 `post_fs
 
 每个 Lua state 最多使用 64 MiB；单次命令输出、文件读取和 JSON 输入等还有独立大小限制。超时或超限会失败，原因写入 `last_output.log`。
 
-实现接口以 [`plugin.hpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/plugin.hpp)、[`plugin.cpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/plugin.cpp) 与 [`lua_engine.cpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/lua_engine.cpp) 为准。
+实现接口以 [`plugin.hpp`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/plugin/plugin.hpp)、[`plugin.cpp`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/plugin/plugin.cpp) 与 [`lua_engine.cpp`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/plugin/lua_engine.cpp) 为准。
 
 ## 插件仓库
 

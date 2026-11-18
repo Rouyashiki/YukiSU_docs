@@ -27,7 +27,7 @@ Every YukiSU userspace component is built for API 31 (Android 12) and checked ag
 ## Windows
 
 ```powershell
-git clone --branch v1.8.0 --recurse-submodules https://github.com/Rouyashiki/YukiSU
+git clone --branch v1.9.0 --recurse-submodules https://github.com/Rouyashiki/YukiSU
 cd YukiSU
 .\scripts\build.bat --help
 .\scripts\build.bat -k android16-6.12 --clean
@@ -48,7 +48,7 @@ SDK resolution checks `ANDROID_SDK_ROOT` / `ANDROID_HOME`, `manager/local.proper
 ## Linux / macOS
 
 ```sh
-git clone --branch v1.8.0 --recurse-submodules https://github.com/Rouyashiki/YukiSU
+git clone --branch v1.9.0 --recurse-submodules https://github.com/Rouyashiki/YukiSU
 cd YukiSU
 ./scripts/build.sh --help
 ./scripts/build.sh -k android16-6.12 --clean
@@ -62,7 +62,7 @@ For an existing checkout, run `git submodule update --init --recursive` so Magis
 
 The Manager build generates license inventories and texts from Maven dependencies and native submodule revisions. If generation or verification fails, resolve the reported submodule, dependency registration or license source, then rebuild.
 
-YukiPLT is the PLT dependency in v1.8.0. The Zygote and Native cores each statically link a private copy from `userspace/zygisk/third_party/yukiplt`; do not reuse the former LSPlt build directory. After changing dependency revisions, use `--clean` and initialize submodules before rebuilding.
+YukiZygisk in v1.9.0 depends on both the YukiLinker SDK and YukiPLT. Both are submodules under `userspace/zygisk/third_party/`. After switching to the release tag, initialize the submodules and rebuild with `--clean` so all components come from the same revision.
 
 ## Common options
 
@@ -118,11 +118,11 @@ For device testing, use Manager to install matching LKM and userspace components
 
 ## Source entry points
 
-- [Windows build script](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/scripts/build.ps1)
-- [Linux/macOS build script](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/scripts/build.sh)
-- [CI KMI matrix](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/.github/workflows/build-lkm.yml)
-- [`ksud` asset packer](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/scripts/embed_assets.py)
-- [Toolchain versions](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/gradle/libs.versions.toml)
-- [License generation](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/build.gradle.kts)
+- [Windows build script](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/scripts/build.ps1)
+- [Linux/macOS build script](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/scripts/build.sh)
+- [CI KMI matrix](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/.github/workflows/build-lkm.yml)
+- [`ksud` asset packer](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/scripts/embed_assets.py)
+- [Toolchain versions](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/gradle/libs.versions.toml)
+- [License generation](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/build.gradle.kts)
 
-- [YukiPLT integration build](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/CMakeLists.txt)
+- [YukiPLT integration build](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/CMakeLists.txt)

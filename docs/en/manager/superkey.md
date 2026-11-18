@@ -7,7 +7,7 @@ title: SuperKey authentication
 
 SuperKey is an optional **manager authentication key** for custom-signed or private managers to authenticate with the kernel.
 
-Leave it empty when using the official manager. The trusted package name and APK signature provide authentication by default.
+Leave it empty when using the official Manager. The official v1.9.0 LKM trusts the new certificate first and also accepts the legacy certificate during the switch. If you set your own SuperKey, enter it again in the new app. Android excludes the saved key from system backups and device transfers.
 
 ::: important Manager authentication only
 Successful SuperKey authentication gives the caller YukiSU manager identity. Superuser grants and App Profile still control application root access.
@@ -126,4 +126,4 @@ If signature authentication remains enabled, use the trusted official manager an
 
 ## Source references
 
-[superkey.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/manager/superkey.c), [supercall.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/supercall/supercall.c), [ksu.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/cpp/ksu.c).
+[superkey.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/manager/superkey.c), [supercall.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/supercall/supercall.c), [ksu.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/cpp/ksu.c).

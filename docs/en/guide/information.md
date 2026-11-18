@@ -27,7 +27,7 @@ A [configuration-only Ramdisk patch](/en/manager/boot-config/) is a separate ima
 - `su` is the userspace elevation entry, currently implemented in `ksud`; kernel authorization and App Profile determine whether elevation is allowed.
 - Manager provides controls and diagnostics. YukiZygisk daemon/core components implement injection.
 
-The APK's bundled `ksud` and `/data/adb/ksud` are updated separately. Manager checks the actual ELF and offers manual synchronization. Automatic synchronization is off by default. When enabled, it checks and synchronizes at app cold start only if the kernel already recognizes Manager's identity. Without that identity, it skips the attempt; synchronize manually after authentication. This does not update the LKM or boot images.
+Automatic `ksud` updates are on by default. When the Manager starts, it compares the bundled file with `/data/adb/ksud` if the kernel already recognizes the app. If authentication finishes later, tap `ksud daemon` on Home to sync. Use the image patch or install flow to update the LKM.
 
 ## Modules, MetaModules, Kagami, and Kasumi
 

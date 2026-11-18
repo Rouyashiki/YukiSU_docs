@@ -21,7 +21,7 @@ Integrated YukiZygisk cannot run alongside another Zygisk implementation. While 
 
 ## Integrated versus standalone
 
-This chapter describes the integrated version shipped with YukiSU v1.8.0. Its kernel hooks live in `kernelsu.ko`; YukiSU's `ksud` and manager handle configuration, payload deployment, startup and diagnostics. Update the integrated version through YukiSU's installation/update flow, keeping its LKM and userspace components matched. The standalone version has its own package, kernel component and update flow; do not mix their binaries.
+This chapter describes the integrated version shipped with YukiSU v1.9.0. Its kernel hooks live in `kernelsu.ko`; YukiSU's `ksud` and manager handle configuration, payload deployment, startup and diagnostics. Update the integrated version through YukiSU's installation/update flow, keeping its LKM and userspace components matched. The standalone version has its own package, kernel component and update flow; do not mix their binaries.
 
 ## Requirements and enablement
 
@@ -81,6 +81,6 @@ After installation, check that the module appears in the list, inspect its load 
 
 ## Source references
 
-- [Startup and recovery](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yukizygisk_daemon.cpp)
-- [Kernel exec path](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/feature/yukizygisk/exec.c)
-- [Early snapshot](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yukizygisk_snapshot.cpp)
+- [Startup and recovery](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/yukizygisk_daemon.cpp)
+- [Kernel exec path](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/feature/yukizygisk/exec.c)
+- [Early snapshot](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/yukizygisk_snapshot.cpp)

@@ -5,8 +5,8 @@ config:
   - type: doc-hero
     hero:
       name: YukiSU
-      text: A modern root experience for Android 12+ ARM64 GKI devices
-      tagline: v1.8.0 · Built-in mounting, YukiZygisk, and management tools
+      text: Root based on KernelSU
+      tagline: The Manager has a new package name and signing certificate in v1.9.0. Follow the upgrade guide if you already use YukiSU.
       image:
         src: /YukiSU-mini.svg
         alt: YukiSU
@@ -15,40 +15,40 @@ config:
           text: Get started →
           link: /en/guide/get-started/
         - theme: alt
-          text: View on GitHub →
-          link: https://github.com/Rouyashiki/YukiSU
+          text: Upgrade from an older version →
+          link: /en/guide/update/
   - type: features
     features:
-      - title: Kernel-level root
+      - title: App permissions
         icon: 🛡️
-        details: Root decisions stay in the kernel. You decide which apps get access and how much they receive.
+        details: Choose which apps can use root and set permissions for each one.
         link: /en/guide/intro/
-      - title: A focused technical path
+      - title: YukiSU and KernelSU
         icon: 🧭
-        details: Android 12+, ARM64 GKI 2.0 and LKM only, with eight current build targets spanning kernel 5.10 through 6.18.
+        details: Compare supported kernels, installation options, and how each project mounts module files.
         link: /en/guide/yukisu-vs-kernelsu/
-      - title: Modern C++ userspace
+      - title: Feature guide
         icon: ⚙️
-        details: C++ ksud (including su) and ksuinit maintain installation, module handling, and diagnostics.
+        details: Find the Manager screen and component responsible for a feature, from root grants to image patching.
         link: /en/guide/features/
-      - title: Flexible module mounting
+      - title: Module mounting
         icon: 🧩
-        details: Built-in Kagami handles mounts, external MetaModules can take precedence, and Kasumi provides kernel views.
+        details: Use the built-in Kagami backend to mount module files, or keep using an external MetaModule.
         link: /en/modules/meta-module/
-      - title: Secure authentication
+      - title: Manager authentication
         icon: 🔐
-        details: Official builds use signature trust. Private deployments may use SuperKey, which authenticates the manager—not app root.
+        details: The kernel recognizes the official Manager by its signing certificate. Custom builds can use SuperKey.
         link: /en/manager/superkey/
-      - title: Complete management
+      - title: Manager
         icon: 🛠️
-        details: A unified Material 3 Expressive interface for grants, boot configuration, modules, AVB, and Ramdisk editing.
+        details: Check root status, install modules, back up partitions, or patch a boot image from your phone.
         link: /en/manager/overview/
-      - title: YukiZygisk included
+      - title: YukiZygisk
         icon: 🧬
-        details: Ordinary Zygisk modules and native ZN targets load and report separately; core root stays independent when it is off.
+        details: Enable YukiZygisk when a module needs it. The status page shows which loads succeeded and which failed.
         link: /en/yukizygisk/intro/
       - title: Jailbreak mode
         icon: 🚀
-        details: Try a matching LKM without changing the boot image. Root lasts for the current boot and is gone after reboot.
+        details: On supported setups, try a matching LKM for the current boot. A full reboot ends the temporary root session.
         link: /en/guide/jailbreak-mode/
 ---

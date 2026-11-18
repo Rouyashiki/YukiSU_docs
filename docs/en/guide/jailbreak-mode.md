@@ -7,7 +7,7 @@ title: Jailbreak mode
 
 “Jailbreak mode” is YukiSU Manager's entry to **late-load**: after Android has booted, load a `kernelsu.ko` matching the running kernel KMI, then initialize YukiSU userspace, modules and manager state.
 
-The steps below describe v1.8.0. Use this mode to try a matching LKM or obtain a temporary management environment without patching the boot image. It uses the same module format as persistent installation.
+This mode lets you try a matching LKM for the current boot. In v1.9.0, late-load reopens the new Manager package when initialization finishes.
 
 ::: warning Not a persistent installation
 Jailbreak mode enables YukiSU only for the current boot. After reboot, it must be started again manually or automatically unless YukiSU has been installed into the boot chain separately.
@@ -43,14 +43,14 @@ Both paths produce the same YukiSU late-load state. They differ only in where th
 YukiSU implements late-load in C++ `ksud`:
 
 1. inspect the running kernel and determine KMI;
-2. extract the matching `<kmi>_kernelsu.ko` from manager resources;
-3. load the LKM through the kernel module interface;
+2. Decode the matching bundled LKM in memory and verify it.
+3. Load the LKM and check that the driver responds before continuing.
 4. install or update YukiSU userspace required by this session;
 5. process module updates/removals, contexts, SELinux rules, App Profiles and Feature configuration;
 6. run `late-load.d` and module `late-load.sh` scripts;
 7. load `system.prop`, then call an enabled external `metamount.sh` or built-in Kagami;
-8. enter `post-mount`, `service` and `boot-completed` stages;
-9. refresh manager state so the current YukiSU session is recognized.
+8. Run `post-mount` after mounting. `service` and `boot-completed` run on each late-load.
+9. Reopen the Manager. The default package is `org.rouyashiki.yukisu`.
 
 Module directories and MetaModule interfaces remain compatible. Late-load runs only the stages listed below; it does not replay earlier boot actions.
 
@@ -110,7 +110,7 @@ Do not leave a device Permissive long-term solely for Jailbreak mode without und
 - **Module partially works:** inspect whether initialization exists only in `post-fs-data.sh`, then check `late-load.sh`, MetaModule `metamount.sh`, `post-mount` and `service` logs.
 - **YukiSU disappears after reboot:** expected for a temporary session. Use the normal LKM installation flow for persistence.
 
-v1.8.0 asks for confirmation before an ordinary reboot in late-load mode. Temporary root does not survive a full reboot. Prepare images and recovery tools first if you intend to move to a persistent installation.
+The Manager asks for confirmation before an ordinary reboot in late-load mode. Temporary root does not survive a full reboot. Prepare images and recovery tools first if you intend to move to a persistent installation.
 
 ## References
 

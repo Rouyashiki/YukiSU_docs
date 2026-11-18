@@ -27,7 +27,7 @@ zygisk/armeabi-v7a.so
 
 ## 当前 API 范围
 
-YukiSU 仓库的 [`zygisk.hpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/include/zygisk.hpp) 当前声明 `ZYGISK_API_VERSION=5`。集成 core 接受 API v1 到 v5，并为旧版参数布局与旧 PLT hook 入口保留兼容桥。
+YukiSU 仓库的 [`zygisk.hpp`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/include/zygisk.hpp) 当前声明 `ZYGISK_API_VERSION=5`。集成 core 接受 API v1 到 v5，并为旧版参数布局与旧 PLT hook 入口保留兼容桥。
 
 API v5 模块可实现：
 
@@ -43,7 +43,7 @@ API v5 模块可实现：
 `FORCE_DENYLIST_UNMOUNT` 目前只记录选项，不执行额外卸载。普通模块挂载的卸载由 YukiSU UID/profile 与 YukiZygisk 拒绝名单模式决定。
 :::
 
-`DLCLOSE_MODULE_LIBRARY` 请求在 post-specialize 后卸载库。v1.8.0 会拒绝卸载仍有活动 hook、待恢复 hook 或已发布 PLT replacement 的模块；即使一次安装后来回滚，也不能据此假设没有线程持有 replacement。模块应让 hook 代码与原函数存储持续有效。
+`DLCLOSE_MODULE_LIBRARY` 请求在 post-specialize 后卸载库。运行时会拒绝卸载仍有活动 hook、待恢复 hook 或已发布 PLT replacement 的模块；即使一次安装后来回滚，也不能据此假设没有线程持有 replacement。模块应让 hook 代码与原函数存储持续有效。
 
 ## 加载与回调时机
 
@@ -58,11 +58,11 @@ API v5 模块可实现：
 
 UID 位于 isolated-process 范围的 app 子进程与 child Zygote 自身会跳过普通模块加载。符合“应用 UID + 包名形式 `_zygote`”条件的 app Zygote，其后代是 isolated 进程，可以在安全条件满足后释放 core；`webview_zygote` 等仍需处理普通后代的 Zygote 会保留 core。system_server 使用 server 回调，不应把 app 参数结构套上去。
 
-YukiLinker 优先使用自带加载器；带 `PT_TLS` 的普通模块直接使用系统 linker，自带加载器失败时也会尝试系统路径。匿名内存是独立设置，实际加载路径记录在加载日志中。模块必须正确声明动态依赖，并在持久 hook 仍生效时保持库映射。
+v1.9.0 使用 YukiLinker SDK。开启 YukiLinker 时，普通模块优先使用自带加载器。只有符合回退条件的加载错误才会改用系统加载器。日志里会记录实际使用的后端。
 
 ## PLT hook：YukiPLT
 
-v1.8.0 将 PLT 后端从 LSPlt 换成 YukiPLT，公开 Zygisk API 版本与表布局不变。模块仍调用 `pltHookRegister` 和 `pltHookCommit`，但需要遵守这些约束：
+从 v1.8.0 起，PLT 后端使用 YukiPLT，公开 Zygisk API 版本与表布局不变。模块仍调用 `pltHookRegister` 和 `pltHookCommit`，但需要遵守这些约束：
 
 - 在模块自己的生命周期回调线程中注册并提交；请求按模块隔离，不要从异步工作线程调用。
 - `(dev, inode)` 必须唯一标识可枚举的目标 ELF；symbol 必须对应唯一、非空的 `JUMP_SLOT`。每个槽位只允许一个 hook 所有者。
@@ -92,7 +92,7 @@ Companion 由 `zygiskd` 按需启动，可并发处理连接。模块应定义�
 
 ## 查看模块加载状态
 
-管理器的普通 Zygisk 模块数量来自活动目录中的 ABI 库库存。当前版本还提供模块运行状态：只有内核声明支持模块监视、且报告匹配当前 Zygote 的 ABI、PID 与代际，才用于汇总。明确失败优先于成功；没有匹配报告时显示 `unknown`。此时先启动目标应用，再刷新状态页；仍无结果时检查对应 ABI 的 daemon/core 日志。
+列表里的数量表示已找到多少个对应 ABI 的模块库。想知道运行结果，点开模块详情看当前 Zygote 的记录。v1.9.0 会同时保留成功和失败，某个应用加载失败时，其他应用里的成功记录仍然可见。`unknown` 表示还没有匹配的报告。
 
 `injected` 表示模块已完成入口注册、加载和 `onLoad`。接下来在目标应用中测试 pre/post 回调和模块功能。崩溃保护暂停与回溯信息单独展示，详见[功能与状态](/yukizygisk/features/)。
 
@@ -120,7 +120,7 @@ core 日志中的 “loaded N module(s)” 对应第 3 项；模块功能以第 
 
 ## 源码参考
 
-- [模块加载与报告](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/core.cpp)
-- [specialize 与 app Zygote](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/hook.cpp)
+- [模块加载与报告](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/core.cpp)
+- [specialize 与 app Zygote](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/hook.cpp)
 
-- [PLT 与 fork 生命周期](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/plt_lifecycle.cpp)
+- [PLT 与 fork 生命周期](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/plt_lifecycle.cpp)

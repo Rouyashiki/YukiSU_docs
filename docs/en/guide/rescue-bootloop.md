@@ -16,7 +16,7 @@ Record the last image, partition, slot, or module changed. Repeatedly flashing d
 
 Restore stock image primarily handles the boot chain. Permanent uninstall also removes YukiSU userspace and the module environment. Do not use deletion of `/data/adb` as a default troubleshooting step.
 
-In v1.8.0, permanent uninstall restores boot images first. Only after success does it run module uninstall scripts and remove userspace, injected init rc, and preinit files. A restoration failure stops the flow. Keep the error, backups, and tools, resolve restoration, then retry uninstall. The temporary LKM command `ksud unload` does not restore on-disk boot images and cannot replace permanent uninstall.
+Permanent uninstall restores boot images first. Only after success does it run module uninstall scripts and remove userspace, injected init rc, and preinit files. A restoration failure stops the flow. Keep the error, backups, and tools, resolve restoration, then retry uninstall. The temporary LKM command `ksud unload` does not restore on-disk boot images and cannot replace permanent uninstall.
 
 ## Ordinary module boot failures: safe mode
 
@@ -61,6 +61,6 @@ Keep model, firmware, full kernel version, APK/`ksud`/LKM versions, partition/sl
 
 ## Sources
 
-- [Boot-time key detection](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/runtime/ksud_integration.c)
-- [Safe-mode module handling](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/init_event.cpp)
-- [Preinit synchronization and status](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/preinit.cpp)
+- [Boot-time key detection](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/runtime/ksud_integration.c)
+- [Safe-mode module handling](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/init_event.cpp)
+- [Preinit synchronization and status](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/preinit.cpp)

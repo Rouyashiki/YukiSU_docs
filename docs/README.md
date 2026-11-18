@@ -5,8 +5,8 @@ config:
   - type: doc-hero
     hero:
       name: YukiSU
-      text: 为 Android 12+ ARM64 GKI 设备打造的现代 Root 方案
-      tagline: v1.8.0 · 内置模块挂载、YukiZygisk 与完整管理工具
+      text: 基于 KernelSU 的 Root 实现
+      tagline: v1.9.0 已更换管理器包名和签名。正在用旧版？先看升级指南。
       image:
         src: /YukiSU-mini.svg
         alt: YukiSU
@@ -15,40 +15,40 @@ config:
           text: 快速开始 →
           link: /guide/get-started/
         - theme: alt
-          text: 在 GitHub 上查看 →
-          link: https://github.com/Rouyashiki/YukiSU
+          text: 从旧版升级 →
+          link: /guide/update/
   - type: features
     features:
-      - title: 内核级 Root 能力
+      - title: 应用授权
         icon: 🛡️
-        details: Root 权限在内核侧处理，应用拿不拿得到、拿到多少，都由你决定。
+        details: 决定哪些应用可以使用 Root，也可以为每个应用单独设置权限。
         link: /guide/intro/
-      - title: 清晰的技术路线
+      - title: 与 KernelSU 的区别
         icon: 🧭
-        details: 只做 Android 12+、ARM64 GKI 2.0 与 LKM；当前完整构建覆盖 5.10 到 6.18 的八组 KMI。
+        details: 已经用过 KernelSU？看看两者支持哪些内核，以及安装模块时有什么不同。
         link: /guide/yukisu-vs-kernelsu/
-      - title: 现代 C++ 用户空间
+      - title: 功能概览
         icon: ⚙️
-        details: ksud（含 su）与 ksuinit 使用 C++，维护自己的安装、模块与诊断实现。
+        details: 从 Root 授权到镜像修补，查一项功能由哪个组件负责、在管理器哪里设置。
         link: /guide/features/
-      - title: 灵活模块挂载
+      - title: 模块挂载
         icon: 🧩
-        details: 内置 Kagami 提供挂载，外部 MetaModule 可优先接管；Kasumi 提供内核视图能力。
+        details: Kagami 可以直接挂载模块文件。已经装了 MetaModule 的话，也可以继续交给它。
         link: /modules/meta-module/
-      - title: 安全认证
+      - title: 管理器认证
         icon: 🔐
-        details: 官方管理器默认靠签名认证；私有部署还可以用 SuperKey，但它只认管理器，不管应用 Root。
+        details: 官方管理器用签名认证。自己签名的管理器可以用 SuperKey。
         link: /manager/superkey/
-      - title: 完整管理体验
+      - title: 管理器
         icon: 🛠️
-        details: 统一的 Material 3 Expressive 界面，集中管理授权、启动配置、模块、AVB 与 Ramdisk 编辑。
+        details: 在手机上查看 Root 状态、安装模块、备份分区或修补启动镜像。
         link: /manager/overview/
-      - title: YukiZygisk 加持
+      - title: YukiZygisk
         icon: 🧬
-        details: 普通 Zygisk 模块与 Native ZN 目标分开加载、分开报告；不用时也不影响核心 Root。
+        details: 需要 Zygisk 模块时再开启，在状态页查看哪些模块成功加载、哪些出了错。
         link: /yukizygisk/intro/
       - title: 越狱模式
         icon: 🚀
-        details: 不改启动镜像也能临时加载 YukiSU。适合试 LKM、看效果；重启后不会继续保留 Root。
+        details: 符合条件的设备可以在本次开机临时加载 LKM。完整重启后，这次加载的 Root 就会消失。
         link: /guide/jailbreak-mode/
 ---

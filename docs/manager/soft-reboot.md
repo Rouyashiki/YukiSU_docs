@@ -19,7 +19,7 @@ YukiSU 软重启由设备侧 `ksud` 重启 Android 服务、重新执行模块�
 
 ## 支持条件
 
-v1.8.0 不再因为 Kasumi 启用就一律阻止软重启。开始前同时检查：
+开启 Kasumi 的设备也可以使用软重启。管理器会在开始前检查下列条件。
 
 | 条件 | 不满足时怎么处理 |
 | --- | --- |
@@ -49,6 +49,8 @@ v1.8.0 不再因为 Kasumi 启用就一律阻止软重启。开始前同时检�
 
 ## 查看完成结果
 
+首页和设置页只显示本次开机的软重启结果。完整重启后，上一次开机的提示会消失。已完成的通知可以手动关闭。
+
 返回管理器查看上次结果，也可在有 Root 的终端读取：
 
 ```sh
@@ -76,4 +78,4 @@ JSON 顶层的 `supported`、`blocked_reason`、`running` 表示当前可用性�
 
 ## 源码
 
-[Manager 状态与入口](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/SoftReboot.kt)、[执行与状态](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/init_event.cpp)、[失败恢复](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/soft_reboot_flow.hpp)、[支持检查](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/core/reboot_state.cpp)、[控制器协议](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/core/daemon.cpp)、[规则恢复检查](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/mount/kasumi.cpp)。
+[Manager 状态与入口](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/SoftReboot.kt)、[执行与状态](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/init_event.cpp)、[失败恢复](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/soft_reboot_flow.hpp)、[支持检查](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/core/reboot_state.cpp)、[控制器协议](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/core/daemon.cpp)、[规则恢复检查](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/mount/kasumi.cpp)。

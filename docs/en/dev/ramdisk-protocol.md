@@ -46,4 +46,4 @@ The complete edit plan is validated before publication, preserving metadata and 
 
 Write the entire request before awaiting its response. A save producer must not issue nested `READ` calls on the same serialized session. The current limits remain 512 MiB of content and 262144 edit segments; requests exceeding these limits are rejected.
 
-The [complete protocol specification](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/docs/ramdisk-editor-protocol.md) defines node records, all 20 opcodes, capability bits, status codes, edit-plan layout and the 96-byte ELF header. Use that specification to implement frame parsing and error handling.
+The [complete protocol specification](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/docs/ramdisk-editor-protocol.md) defines node records, all 20 opcodes, capability bits, status codes, edit-plan layout and the 96-byte ELF header. Use that specification to implement frame parsing and error handling.

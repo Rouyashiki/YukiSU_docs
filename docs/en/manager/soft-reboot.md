@@ -19,7 +19,7 @@ The manager queries device-side `ksud soft-reboot-status --json`. Until the quer
 
 ## Requirements
 
-v1.8.0 no longer blocks soft reboot merely because Kasumi is enabled. These conditions are checked before starting:
+Devices running Kasumi can use soft reboot when the following checks pass.
 
 | Requirement | Remedy when unmet |
 | --- | --- |
@@ -49,6 +49,8 @@ A temporarily black screen and closed apps are part of restarting Android servic
 
 ## Reading the result
 
+Home and Settings show results from the current boot. A full reboot clears the previous boot’s notice. You can dismiss a finished notification.
+
 Return to Manager for the last result, or read it from a root terminal:
 
 ```sh
@@ -76,4 +78,4 @@ Logs are in `/data/adb/ksu/kagami/run/soft-reboot.log`, with the previous log at
 
 ## Source references
 
-[Manager status and entry points](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/SoftReboot.kt), [Execution and status](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/init_event.cpp), [Failure recovery](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/soft_reboot_flow.hpp), [Support checks](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/core/reboot_state.cpp), [Controller protocol](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/core/daemon.cpp), [Rule verification](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/mount/kasumi.cpp).
+[Manager status and entry points](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/SoftReboot.kt), [Execution and status](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/init_event.cpp), [Failure recovery](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/soft_reboot_flow.hpp), [Support checks](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/core/reboot_state.cpp), [Controller protocol](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/core/daemon.cpp), [Rule verification](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/mount/kasumi.cpp).

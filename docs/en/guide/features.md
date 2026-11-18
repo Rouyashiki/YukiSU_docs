@@ -44,7 +44,7 @@ Manager presents the su entry as Disabled, Traditional, or KSM instead of indepe
 
 ID 6 does not grant shell root and is separate from ADB Root. Once shell is authorized, it additionally checks for an `adbd` or YukiSU root-domain ancestor.
 
-v1.8.0 no longer uses IDs 5 and 100. Configure WebView unmounting in Superuser → WebView Zygote, under its non-root profile. Enhanced security has been removed. Remove these retired IDs from boot configuration and scripts.
+IDs 5 and 100 are retired. Configure WebView unmounting in Superuser → WebView Zygote, under its non-root profile. Enhanced security has been removed. Remove these retired IDs from boot configuration and scripts.
 
 ## Runtime settings and boot configuration
 
@@ -66,7 +66,7 @@ These options do not disable SELinux, relock the bootloader, or guarantee integr
 
 Root authorization permits elevation; [App Profile](/en/manager/app-profile/) constrains the resulting identity and environment. Revocation affects new requests; restart processes that already obtained root before checking it.
 
-v1.8.0 uses `u:r:ksu:s0` as the default root SELinux domain and enables feature 102 by default. Existing custom domains and per-app flags are retained. Test existing grants after upgrading; there is no need to recreate all profiles.
+YukiSU uses `u:r:ksu:s0` as the default root SELinux domain and enables feature 102 by default. Existing custom domains and per-app flags are retained. Test existing grants after upgrading; there is no need to recreate all profiles.
 
 The official Manager uses APK identity authentication. [SuperKey](/en/manager/superkey/) and dynamic managers provide additional authentication paths. Per-signature compatibility values change the versions a trusted manager sees. They cannot make a third-party command work when YukiSU does not implement it.
 
@@ -86,6 +86,6 @@ Manager now uses Material 3 Expressive throughout, with compact layout and motio
 
 ## Sources
 
-- [Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/feature.h)
-- [Feature persistence](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp)
-- [Mount-backend selection](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/metamodule.cpp)
+- [Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/feature.h)
+- [Feature persistence](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/core/feature.cpp)
+- [Mount-backend selection](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/metamodule.cpp)

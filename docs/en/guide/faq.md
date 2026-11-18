@@ -5,7 +5,11 @@ title: FAQ
 
 # FAQ
 
-Find answers to common installation, module, authorization, and update questions here. For a failed operation, use [Common troubleshooting](/en/troubleshoot/common/).
+If an install, update, or root request failed, look up the symptom in [Common troubleshooting](/en/troubleshoot/common/).
+
+## Why are there two YukiSU icons after upgrading?
+
+Android keeps both apps because v1.9.0 has a new package name and signing certificate. Open the new Manager (version code `10745`) and check the LKM, `ksud`, and your modules before removing the old APK. Each app has its own settings and private backups. Add any custom repository URLs again in the new app. [Upgrade guide](/en/guide/update/)
 
 ## Which devices are supported?
 
@@ -53,11 +57,11 @@ Check ID 6, `SHELL_SU_ADB_ONLY`. In addition to authorization, it requires an `a
 
 ## Where did WebView unmounting and Enhanced security go?
 
-v1.8.0 moves WebView unmounting to the non-root profile under Superuser → WebView Zygote. Restart affected processes after changing it; reboot fully to recreate the shared WebView Zygote. Feature 5 is retired, and Enhanced security and feature 100 have been removed. Those IDs in older guides no longer apply. See [App Profile](/en/manager/app-profile/).
+Since v1.8.0, WebView unmounting has been controlled by the non-root profile under Superuser → WebView Zygote. Restart affected processes after changing it; reboot fully to recreate the shared WebView Zygote. Feature 5 is retired, and Enhanced security and feature 100 have been removed. Those IDs in older guides no longer apply. See [App Profile](/en/manager/app-profile/).
 
 ## Why did the default root domain and escape-prevention setting change?
 
-v1.8.0 defaults to `u:r:ksu:s0` and enables feature 102 during its first migration. Existing custom domains and per-app flags remain, with compatibility handling for legacy `su` policies. To adjust an app, open its App Profile, check whether it uses the default or a custom profile, then change that profile's setting.
+YukiSU has used `u:r:ksu:s0` as its default since v1.8.0. The first migration enables Feature 102. Existing custom domains and per-app flags remain, with compatibility handling for legacy `su` policies. To adjust an app, open its App Profile, check whether it uses the default or a custom profile, then change that profile's setting.
 
 ## Is SuperKey required?
 
@@ -77,7 +81,7 @@ No. Repeated PID changes for the same Zygote trigger global injection protection
 
 ## Can a soft reboot replace a full reboot?
 
-No. It does not reload the kernel or rerun the bootloader, early boot configuration, or preinit. v1.8.0 allows emulated soft reboot when the daemon confirms recovery support, including restoring Kasumi rules. If a prerequisite fails, Manager shows the reason. After acceptance, wait for the final recovery result. On failure, retain logs and reboot fully. See [Soft reboot](/en/manager/soft-reboot/).
+No. It does not reload the kernel or rerun the bootloader, early boot configuration, or preinit. YukiSU allows emulated soft reboot when the daemon confirms recovery support, including restoring Kasumi rules. If a prerequisite fails, Manager shows the reason. After acceptance, wait for the final recovery result. On failure, retain logs and reboot fully. See [Soft reboot](/en/manager/soft-reboot/).
 
 ## Must I delete every module when switching root solutions?
 

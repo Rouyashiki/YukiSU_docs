@@ -27,7 +27,7 @@ Complete a reboot after installing, updating, enabling, disabling or uninstallin
 
 ## Current API range
 
-The repository's [`zygisk.hpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/include/zygisk.hpp) currently declares `ZYGISK_API_VERSION=5`. The integrated core accepts API v1 through v5 and retains compatibility bridges for old argument layouts and old PLT-hook entries.
+The repository's [`zygisk.hpp`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/include/zygisk.hpp) currently declares `ZYGISK_API_VERSION=5`. The integrated core accepts API v1 through v5 and retains compatibility bridges for old argument layouts and old PLT-hook entries.
 
 An API v5 module can implement:
 
@@ -43,7 +43,7 @@ Modules that depend on private Magisk/Zygisk Next interfaces, specific ART/JNI s
 `FORCE_DENYLIST_UNMOUNT` currently records the option without performing an additional unmount. Ordinary-module mounts are unmounted according to the YukiSU UID/profile and YukiZygisk denylist mode.
 :::
 
-`DLCLOSE_MODULE_LIBRARY` requests library unload after post-specialize. v1.8.0 refuses unload while a module has active hooks, recovery handles or a published PLT replacement. A rolled-back installation does not establish that no thread still holds the replacement. Keep replacement code and original-function storage alive.
+`DLCLOSE_MODULE_LIBRARY` requests library unload after post-specialize. The runtime refuses unload while a module has active hooks, recovery handles or a published PLT replacement. A rolled-back installation does not establish that no thread still holds the replacement. Keep replacement code and original-function storage alive.
 
 ## Load and callback timing
 
@@ -58,11 +58,11 @@ Ordinary module libraries are loaded in the derived child rather than keeping ev
 
 App children in the isolated UID range and child Zygotes themselves skip ordinary module loading. An app Zygote matching an app UID and package-style `_zygote` name can release the core when safety checks pass because its children are isolated. Zygotes such as `webview_zygote` that still need to process ordinary descendants retain it. system_server uses server callbacks rather than the app argument layout.
 
-YukiLinker prefers the bundled loader. Ordinary modules with `PT_TLS` use the system linker directly; a failed bundled load also attempts the system path. Anonymous memory is a separate setting. The loading log records the actual path. Modules must declare their dynamic dependencies and keep their library mapped while persistent hooks remain active.
+v1.9.0 uses the YukiLinker SDK. With YukiLinker enabled, ordinary modules try the bundled loader first. Only failures eligible for fallback lead to a second attempt with the system loader. The load log shows which backend was used.
 
 ## PLT hooks: YukiPLT
 
-v1.8.0 replaces LSPlt with YukiPLT without changing the public Zygisk API version or table layout. Modules still call `pltHookRegister` and `pltHookCommit`, with these requirements:
+YukiSU has used YukiPLT since v1.8.0. The public Zygisk API keeps the same version and table layout. Modules still call `pltHookRegister` and `pltHookCommit`, with these requirements:
 
 - Register and commit on the module's own lifecycle callback thread, not an asynchronous worker thread. Requests are isolated per module.
 - `(dev, inode)` must identify one enumerable target ELF. The symbol must have a unique, non-null `JUMP_SLOT`, with one hook owner per slot.
@@ -92,7 +92,7 @@ Integrated YukiZygisk performs no post-specialization sweep of mounts created by
 
 ## Check module load status
 
-The ordinary Zygisk module count comes from ABI libraries in active module directories. Current versions also expose module runtime state. Reports count only when the kernel advertises module monitoring and they match the current Zygote ABI, PID and generation. Explicit failure takes priority over success. Without a matching report, status is `unknown`: start the target app and refresh the page. If no result arrives, check daemon/core logs for the target ABI.
+The count tells you how many module libraries were found for the ABI. Open the module details to see results for the current Zygote. In v1.9.0 a failed load in one app leaves successful reports from other apps visible. `unknown` means no matching report has arrived.
 
 `injected` means module entry registration, loading and `onLoad` completed. Next, test pre/post callbacks and module functionality in the target app. Crash-protection suspensions and backtrace details appear separately; see [Features and status](/en/yukizygisk/features/).
 
@@ -120,7 +120,7 @@ For one failing module:
 
 ## Source references
 
-- [Loading and reports](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/core.cpp)
-- [Specialization and app Zygotes](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/hook.cpp)
+- [Loading and reports](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/core.cpp)
+- [Specialization and app Zygotes](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/hook.cpp)
 
-- [PLT and fork lifecycle](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/plt_lifecycle.cpp)
+- [PLT and fork lifecycle](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/plt_lifecycle.cpp)

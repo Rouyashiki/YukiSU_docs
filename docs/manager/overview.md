@@ -76,7 +76,7 @@ TSR Hook | Lateload
 
 ### 重启菜单
 
-首页右上角电源菜单提供普通重启、Recovery、Bootloader、Fastbootd、Download 与 EDL；设备声明支持 Android userspace reboot 时还会显示“用户空间重启”。软重启在设备侧 daemon 报告支持时显示；v1.8.0 支持满足恢复条件的 Kasumi 软重启。操作后返回首页查看完成或失败结果，见[软重启](/manager/soft-reboot/)。
+首页右上角电源菜单提供普通重启、Recovery、Bootloader、Fastbootd、Download 与 EDL；设备声明支持 Android userspace reboot 时还会显示“用户空间重启”。如果设备上的 `ksud` 报告支持恢复，首页也会显示软重启，包括已开启 Kasumi 的设备。操作后返回首页查看完成或失败结果，见[软重启](/manager/soft-reboot/)。
 
 大部分菜单项直接发起相应操作；late-load 模式的普通完整重启会先提示临时 Root 将丢失。先确认设备是否支持对应重启目标；特别是 Download/EDL，不同厂商的行为并不一致。“软重启”是 `ksud` 实现的 Android 服务重启，也不等同于 Android 的 userspace reboot。
 
@@ -84,11 +84,11 @@ TSR Hook | Lateload
 
 超级用户页支持搜索、分类、排序、显示系统应用、批量操作、侧滑授权/撤权和下拉刷新。共享同一 Android UID 的包会作为一组处理，因为内核授权最终按 UID 生效。
 
-v1.8.0 会枚举主用户、次用户与工作资料中的应用，按完整 UID 分别管理；WebView Zygote 有独立的 Non-root Profile 条目。点进应用后可选择默认、模板或自定义 Root Profile，也可配置非 Root 模块卸载策略。动态管理器是独立的高权限身份，不等同于普通 Root 授权。详见 [App Profile](/manager/app-profile/)。
+管理器会列出主用户、次用户与工作资料中的应用，按完整 UID 分别管理；WebView Zygote 有独立的 Non-root Profile 条目。点进应用后可选择默认、模板或自定义 Root Profile，也可配置非 Root 模块卸载策略。动态管理器是独立的高权限身份，不等同于普通 Root 授权。详见 [App Profile](/manager/app-profile/)。
 
 ## 模块与 MetaModule
 
-模块页可以从本地 ZIP 或模块仓库安装，管理启用、停用、更新和卸载状态，并在模块声明相应入口时运行 `action.sh`、打开 WebUI 或创建桌面快捷方式。模块列表支持下拉刷新和排序。
+模块页可以从本地 ZIP 或模块仓库安装，管理启用、停用、更新和卸载状态，并在模块声明相应入口时运行 `action.sh`、打开 WebUI 或创建桌面快捷方式。管理器取得访问权限后会自动检查模块更新。底部“模块”旁的数字表示有几个可以更新，下拉列表可以重新检查。
 
 普通安装完成后使用页面提供的重启操作，让待更新目录、启动脚本和挂载生效；软重启可用时也能执行这套流程。系统文件挂载可由内置 Kagami 引擎或外部 MetaModule 负责，需确认当前挂载所有者。完整生命周期见[模块系统](/modules/overview/)与 [MetaModule](/modules/meta-module/)。
 
@@ -144,4 +144,4 @@ v1.8.0 会枚举主用户、次用户与工作资料中的应用，按完整 UID
 
 ## 源码
 
-[Home.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Home.kt)、[Module.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Module.kt)。
+[Home.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Home.kt)、[Module.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Module.kt)。

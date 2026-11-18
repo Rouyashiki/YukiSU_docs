@@ -28,13 +28,13 @@ title: 设置与维护
 
 - “检查更新”控制打开管理器时的正式版检查；
 - “检测 CI 更新”只在更新检查开启时出现，默认关闭，用于经过签名的 nightly Manager 构建；
-- APK 更新不会刷写 LKM 或启动镜像；设备侧 `ksud` 需要手动同步，或开启下方的自动更新功能。
+- 管理器 APK 和启动镜像分别更新。设备侧 `ksud` 的同步方式可以在下面设置。
 
-正式版从 [YukiSU Releases](https://github.com/Rouyashiki/YukiSU/releases) 获取。更新层次与校验说明见[更新 YukiSU](/guide/update/)。
+正式版从 [GitHub Releases](https://github.com/Rouyashiki/YukiSU/releases) 下载。新版管理器从 [CI 更新站](https://yukisuupdates.rouyashiki.org/)检查开发版。还在用旧包名的管理器，请先按[升级指南](/guide/update/)手动安装 v1.9.0。
 
 ### 自动更新 `ksud`
 
-此项默认关闭。开启后，管理器冷启动且已被内核认作管理器时，会比较 APK 内置 `libksud.so` 与 `/data/adb/ksud` 的实际文件；不一致时通过管理器 JNI/驱动 Root 通道原子安装内置版本，并修复 `/data/adb/ksu/bin` 下的工具链接。
+默认开启。如果你在新版管理器里手动关过，它会记住你的选择。冷启动时，如果内核已经认出管理器，它会比较 APK 内置的 `libksud.so` 和设备上的 `/data/adb/ksud`。两者不一致时会换成内置版本，并修复 `/data/adb/ksu/bin` 下的工具链接。如果这次打开时还没有通过认证，可以在认证后手动同步。
 
 不开自动同步时，可点首页的 `ksud daemon` 行查看状态并手动同步。
 
@@ -62,7 +62,7 @@ title: 设置与维护
 
 此项默认关闭，决定模块安装、更新、启停或卸载后的完成按钮是否优先使用软重启。late-load 模式在支持软重启时优先使用它，以保留当前加载的 LKM。
 
-v1.8.0 从设备侧 daemon 查询支持条件，符合条件的 Kasumi 也能软重启。操作会等待旧 Android 服务退出、重建挂载并恢复隐藏规则，再启动 Android。页面的“请求已接受”表示后台流程开始；返回管理器查看最终完成、等待规则或失败状态。
+管理器会向设备上的 `ksud` 查询支持条件，符合条件的 Kasumi 也能软重启。操作会等待旧 Android 服务退出、重建挂载并恢复隐藏规则，再启动 Android。页面的“请求已接受”表示后台流程开始；返回管理器查看最终完成、等待规则或失败状态。
 
 新 LKM、启动镜像、ImgPatch 与早启动 UTS 仍须完整重启。支持条件、日志路径和失败处理见[软重启](/manager/soft-reboot/)。电源菜单的 Android“用户空间重启”是另一种平台操作。
 
@@ -109,7 +109,7 @@ v1.8.0 从设备侧 daemon 查询支持条件，符合条件的 Kasumi 也能软
 
 ### 只影响管理器界面
 
-v1.8.0 统一使用 Material 3 Expressive，已移除 Classic/Expressive 选择。语言、明暗主题、动态颜色、主题色、应用 DPI、自定义背景、卡片透明度/遮罩及卡片信息隐藏只改变管理器显示。
+管理器使用 Material 3 Expressive 界面。语言、明暗主题、动态颜色、主题色、应用 DPI、自定义背景、卡片透明度/遮罩及卡片信息隐藏只改变管理器显示。
 
 “动效强度”可选关闭、柔和或 Q弹，默认 Q弹；“切页动效”可选点击展开或经典弹簧滑入，默认点击展开。调整立即作用于后续界面交互，无须重启设备。
 
@@ -140,6 +140,6 @@ v1.8.0 统一使用 Material 3 Expressive，已移除 Classic/Expressive 选择�
 
 ## 源码
 
-[Settings.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Settings.kt)、[SoftReboot.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/SoftReboot.kt)、[Module.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Module.kt)。
+[Settings.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Settings.kt)、[SoftReboot.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/SoftReboot.kt)、[Module.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Module.kt)。
 
-[Theme.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/theme/Theme.kt), [YukiMotion.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/motion/YukiMotion.kt).
+[Theme.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/theme/Theme.kt), [YukiMotion.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/motion/YukiMotion.kt).

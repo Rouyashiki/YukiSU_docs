@@ -5,7 +5,7 @@ title: Native ZN API
 
 # Native ZN API
 
-Native ZN 用来把原生库加载进指定可执行进程。它不依赖 Zygote specialize，也不使用普通 `zygisk.hpp` 的 `ModuleBase`；模块入口、目标清单与 companion 都由 [`zygisk_next_api.h`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/include/zygisk_next_api.h) 定义。
+Native ZN 用来把原生库加载进指定可执行进程。它不依赖 Zygote specialize，也不使用普通 `zygisk.hpp` 的 `ModuleBase`；模块入口、目标清单与 companion 都由 [`zygisk_next_api.h`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/include/zygisk_next_api.h) 定义。
 
 ::: warning 面向原生模块开发者
 Native ZN 在原生进程中运行模块代码。目标、ABI 或 hook 错误会造成目标或系统服务崩溃。先准备原厂启动镜像，并在可恢复设备上一次测试一个模块。Native 目标退出不会增加 Zygote restart 计数；只有连带发生的 Zygote 重启才计入注入安全模式阈值。
@@ -63,6 +63,8 @@ path=<absolute-exec-path> <library> [companion]
 3. 下一次 LKM 初始化时，内核读取快照以匹配 early exec；
 4. `post-fs-data` 后 daemon 再建立 live 模块库存与运行报告。
 
+v1.9.0 使用第 3 版早加载快照。更换版本时要一起更新 LKM 与 `ksud`，旧 LKM 不能读取新版生成的快照。
+
 快照只收录**没有 `companion`** 的有效条目；需要 companion 的模块必须等 `zygiskd` 可用。快照缺失、格式/版本不符、记录的 linker 大小与当前文件不符，或生成时拿不到必需符号 offsets 时，本次启动会关闭 early Native。检查诊断中的快照错误，确认 YukiZygisk 和 `early_load` 已开启，重新生成快照并重启。
 
 更新与禁用时注意：
@@ -73,11 +75,11 @@ path=<absolute-exec-path> <library> [companion]
 
 ## 加载器与进程退出
 
-v1.8.0 的 Native 模块统一通过 Bionic `__loader_android_dlopen_ext` 加载，使用 `RTLD_NOW | RTLD_LOCAL` 与 `ANDROID_DLEXT_USE_LIBRARY_FD`。加载调用以经过身份校验的常驻 libc 为调用方，动态依赖由该系统 linker namespace 解析。YukiLinker 和匿名内存开关不改变 Native 模块的加载器，也不会匿名化其 Bionic 映射。
+v1.9.0 通过 YukiLinker SDK 的系统模式加载 Native ZN 模块。库和依赖由 Android 的 Bionic 管理。管理器里的 YukiLinker 和匿名内存开关适用于普通 Zygisk 模块。
 
 模块进入 `onModuleLoaded` 后，运行时将库句柄保留到进程退出，供后续回调和 `libdl` 调用使用。同一模块目录 ID 在一个进程中只初始化一次；同一文件身份或 Bionic 句柄被另一个模块 ID 复用时会拒绝重复初始化。模块更新、禁用或卸载后，重新启动目标；early 目标需要重新生成快照并完整重启。
 
-加载失败时，在 core 日志中查找 `native caller` 和 `Bionic load failed`。日志会给出失败阶段 `linker`、`anchor`、`revalidate` 或 `load`；最后一类同时检查动态依赖、符号和 linker namespace 错误。
+如果模块没有加载，先确认正在运行的 LKM、设备上的 `ksud` 和管理器来自同一版。然后按模块 ID 查看加载日志，里面会标出使用的后端和系统加载器返回的错误。
 
 当前状态把注入结果与进程 `running` / `exited` / `unknown` 分开，并可关联内核退出历史和 tombstone。正常退出保留先前的注入成功状态。发生崩溃时，结合退出记录和 tombstone 的故障栈定位问题；Native 模块不适用普通 Zygisk 的自动崩溃隔离。
 
@@ -127,7 +129,7 @@ v4 函数表提供：
 
 Hook API 使用 `ZN_SUCCESS`（0）/`ZN_FAILED`（1）。检查返回值，并让目标库、hook 代码和原函数存储在 hook 使用期间保持有效。resolver 必须配对释放；枚举符号的 callback 不能保存超出其生命周期的指针。
 
-### v1.8.0 的 PLT 与 inline hook 约束
+### PLT 与 inline hook 约束
 
 PLT 后端已改用 YukiPLT，ZN API v4 布局保持不变。`pltHook` 要求目标有唯一、非空、可枚举的 `JUMP_SLOT`，且每个目标槽位只有一个所有者。相同 image/symbol/handler 的重复请求会验证已有 hook 并返回保存的原函数，不创建新的 hook 链；不同 handler 的竞争请求会失败。
 
@@ -181,9 +183,9 @@ HYOS runtime v1 允许模块在 `onModuleLoaded` 期间通过 `registerModule` �
 
 ## 源码参考
 
-- [Native 模块加载](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/yukizncore.cpp)
-- [快照生成](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yukizygisk_snapshot.cpp)
-- [清单解析](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/daemon/native_modules.hpp)
+- [Native 模块加载](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/yukizncore.cpp)
+- [快照生成](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/yukizygisk_snapshot.cpp)
+- [清单解析](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/daemon/native_modules.hpp)
 
-- [Native Bionic 加载](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/native_bionic.cpp)
-- [模块与 companion 绑定](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/core/src/native_module_binding.hpp)
+- [Native Bionic 加载](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/native_bionic.cpp)
+- [模块与 companion 绑定](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/core/src/native_module_binding.hpp)

@@ -16,7 +16,7 @@ title: 救砖与恢复
 
 “恢复原厂镜像”主要处理启动链；“永久卸载”还会移除 YukiSU 用户空间与模块环境。两者目的和数据影响不同。不要把清空 `/data/adb` 作为默认排查步骤。
 
-v1.8.0 的永久卸载先恢复启动镜像，成功后才运行模块卸载脚本并清理用户空间、init rc 与 preinit 残留。恢复失败会停止流程，此时先保留错误、备份和工具，处理镜像恢复问题后再卸载。临时卸载 LKM 的 `ksud unload` 不会恢复磁盘上的启动镜像，不能替代永久卸载。
+选择永久卸载时，管理器先恢复启动镜像，成功后才运行模块卸载脚本并清理用户空间、init rc 与 preinit 残留。恢复失败会停止流程，此时先保留错误、备份和工具，处理镜像恢复问题后再卸载。临时卸载 LKM 的 `ksud unload` 不会恢复磁盘上的启动镜像，不能替代永久卸载。
 
 ## 普通模块导致启动异常：安全模式
 
@@ -61,6 +61,6 @@ Ramdisk 通常修改 `boot` / `init_boot` 中的 Ramdisk；ImgPatch 修改 `boot
 
 ## 源码
 
-- [启动按键检测](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/runtime/ksud_integration.c)
-- [安全模式中的模块处理](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/init_event.cpp)
-- [preinit 同步与状态](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/preinit.cpp)
+- [启动按键检测](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/runtime/ksud_integration.c)
+- [安全模式中的模块处理](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/init_event.cpp)
+- [preinit 同步与状态](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/preinit.cpp)

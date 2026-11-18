@@ -76,7 +76,7 @@ After a mismatch alert, inspect recently installed root managers, modules, and s
 
 ### Reboot menu
 
-The Home power menu offers reboot, Recovery, Bootloader, Fastbootd, Download, and EDL. “Userspace reboot” is added when Android reports support. Soft reboot appears when the device-side daemon reports support; v1.8.0 supports Kasumi when restoration requirements are met. Return to Home for completion or failure status; see [Soft reboot](/en/manager/soft-reboot/).
+The Home power menu offers reboot, Recovery, Bootloader, Fastbootd, Download, and EDL. “Userspace reboot” is added when Android reports support. Soft reboot appears when the installed daemon reports recovery support, including on devices running Kasumi. Return to Home for completion or failure status; see [Soft reboot](/en/manager/soft-reboot/).
 
 Most entries request the action immediately. In late-load mode, a normal full reboot first warns that temporary root will be lost. Confirm that the device implements the requested target, especially Download or EDL. The `ksud` soft restart is also distinct from Android userspace reboot.
 
@@ -84,11 +84,11 @@ Most entries request the action immediately. In late-load mode, a normal full re
 
 The Superuser page supports search, categories, sorting, system-app visibility, batch actions, swipe grant/revoke, and pull-to-refresh. Packages sharing one Android UID are managed as a group because the kernel policy ultimately applies to the UID.
 
-v1.8.0 enumerates apps in the owner, secondary users, and work profiles, managing each full UID separately. WebView Zygote has its own non-root profile entry. An app can use the default, a template, or a custom root profile, plus a separate non-root module-unmount policy. Dynamic-manager trust is a separate high-privilege identity and is not an ordinary root grant. See [App Profile](/en/manager/app-profile/).
+The Manager lists apps in the owner, secondary users, and work profiles, managing each full UID separately. WebView Zygote has its own non-root profile entry. An app can use the default, a template, or a custom root profile, plus a separate non-root module-unmount policy. Dynamic-manager trust is a separate high-privilege identity and is not an ordinary root grant. See [App Profile](/en/manager/app-profile/).
 
 ## Modules and MetaModule
 
-The Modules page installs from local ZIPs or module repositories, manages enable/disable/update/uninstall state, and exposes `action.sh`, WebUI, and desktop shortcuts when a module declares them. The list supports pull-to-refresh and sorting.
+The Modules page installs from local ZIPs or module repositories, manages enable/disable/update/uninstall state, and exposes `action.sh`, WebUI, and desktop shortcuts when a module declares them. Once the Manager has access, it checks for module updates automatically. The badge on the Modules tab shows how many updates are available. Pull down to check again.
 
 After a normal installation, use the offered restart action to apply the staged directory, boot scripts, and mounts. Soft reboot can also run this flow when available. System-file mounting can be owned by the built-in Kagami engine or an external MetaModule; check the current owner. See the [Module system](/en/modules/overview/) and [MetaModule](/en/modules/meta-module/).
 
@@ -144,4 +144,4 @@ Resolve authentication, UAPI, and `ksud` errors on Home before investigating mod
 
 ## Source references
 
-[Home.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Home.kt), [Module.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Module.kt).
+[Home.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Home.kt), [Module.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Module.kt).

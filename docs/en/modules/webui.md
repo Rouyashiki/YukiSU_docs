@@ -27,7 +27,7 @@ Declare the engine in `config.json` at the module root, or `config.mmrl.json` wh
 { "webui-engine": "wx" }
 ```
 
-The value may also be an object keyed by manager package name. The current manager uses `com.anatdx.yukisu`, falling back to the `en` key when unmatched. This setting does not belong in `module.prop`.
+To select an engine by Manager package, use the key `org.rouyashiki.yukisu` for v1.9.0. Keep a separate `com.anatdx.yukisu` entry if your module also supports older releases. The Manager reads the `en` entry when there is no match for its package.
 
 ## Local resources and app icons
 
@@ -43,7 +43,7 @@ KSU WebUI can use the `kernelsu` package published from the repository's `js/` d
 yarn add kernelsu
 ```
 
-The JS SDK in the v1.8.0 source is version `3.3.0` and includes `pm` and `io`. If your page bundles an older SDK, update its dependency and rebuild. Updating the manager APK does not rewrite JavaScript inside a module.
+The JS SDK shipped with v1.9.0 is version `3.3.0` and includes `pm` and `io`. If your page bundles an older SDK, update its dependency and rebuild. Updating the manager APK does not rewrite JavaScript inside a module.
 
 Public API:
 
@@ -69,11 +69,11 @@ child.on('exit', code => {
 })
 ```
 
-Use [`js/README.md`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/js/README.md) and [`js/index.d.ts`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/js/index.d.ts) as the maintained parameter and return-value contract.
+Use [`js/README.md`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/js/README.md) and [`js/index.d.ts`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/js/index.d.ts) as the maintained parameter and return-value contract.
 
 ## Packages across users
 
-v1.8.0 provides `pm.support` and `pm.version`; the current interface version is `1`. The manager loads its package inventory before opening the page. `support` is evaluated when the JavaScript library loads, so import it after the host bridge is available. YukiSU exposes this bridge in both KSU WebUI and WebUI X.
+Use `pm.support` to check availability. `pm.version` reports the current interface version, `1`. The manager loads its package inventory before opening the page. `support` is evaluated when the JavaScript library loads, so import it after the host bridge is available. YukiSU exposes this bridge in both KSU WebUI and WebUI X.
 
 ```js
 import { pm } from 'kernelsu'
@@ -109,7 +109,7 @@ The top-level `listPackages` and `getPackagesInfo` APIs remain for compatibility
 
 ## Root file API
 
-v1.8.0 provides `io.support` and `io.version` (currently `1`) in both engines. Calls are synchronous and use the manager's root shell. These APIs can access paths outside the module directory; validate file names and keep operations within paths your module owns.
+Both engines provide `io.support` and `io.version` (currently `1`). Calls are synchronous and use the manager's root shell. These APIs can access paths outside the module directory; validate file names and keep operations within paths your module owns.
 
 | API | Main operations and results |
 | --- | --- |
@@ -203,6 +203,6 @@ During development:
 - System-file replacement still requires an ordinary module and a [built-in or external mount backend](/en/modules/magic-mount/) in addition to any UI or logic.
 - Code that must enter Zygote or a selected native process belongs in an [ordinary Zygisk module](/en/yukizygisk/modules/) or the [Native ZN API](/en/yukizygisk/native-zn/), not WebUI.
 
-Bridge implementation: [WebViewInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/WebViewInterface.kt), [ModuleConfig.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/ModuleConfig.kt), [local resource handler](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/SuFilePathHandler.kt).
+Bridge implementation: [WebViewInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/WebViewInterface.kt), [ModuleConfig.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/ModuleConfig.kt), [local resource handler](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/SuFilePathHandler.kt).
 
-Package and file interfaces: [KsuPm.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/pm/KsuPm.kt), [KsuIO.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/file/KsuIO.kt), [FileInputStreamInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/file/FileInputStreamInterface.kt), [FileOutputStreamInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/file/FileOutputStreamInterface.kt), [RootFileOutputStream.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/file/RootFileOutputStream.kt).
+Package and file interfaces: [KsuPm.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/pm/KsuPm.kt), [KsuIO.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/file/KsuIO.kt), [FileInputStreamInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/file/FileInputStreamInterface.kt), [FileOutputStreamInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/file/FileOutputStreamInterface.kt), [RootFileOutputStream.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/file/RootFileOutputStream.kt).

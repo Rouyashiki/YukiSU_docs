@@ -31,6 +31,12 @@ body {
   animation: hero-float 3.6s ease-in-out infinite;
 }
 
+.vp-home-doc-hero .heading .text {
+  font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .vp-home-feature {
   border: 1px solid color-mix(in srgb, var(--vp-c-brand-1) 8%, var(--vp-c-divider));
   border-radius: 20px !important;

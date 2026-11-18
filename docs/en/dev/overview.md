@@ -5,7 +5,7 @@ title: Developers
 
 # Developers
 
-This chapter targets **YukiSU v1.8.0**. The source lives at [Rouyashiki/YukiSU](https://github.com/Rouyashiki/YukiSU). Use the directory map below to locate the component and choose its build entry point.
+Use this directory map to find the component you want to build in the [YukiSU v1.9.0 source](https://github.com/Rouyashiki/YukiSU/tree/a66faee724c6ff2d79757cb1cc8030fdf71a30f8).
 
 | Directory | Main content |
 | --- | --- |
@@ -40,13 +40,13 @@ ksud boot-patch --help
 
 Help syntax varies by command. Do not invoke a command that changes the system just to look for its usage text.
 
-See [Boot-image commands](/en/dev/boot-images/) for image parameters and [YRCP v3](/en/dev/ramdisk-protocol/) for the Ramdisk binary protocol. For other commands, use help from the exact build and [`userspace/ksud/src/cli.cpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/cli.cpp). Third-party tools should pin a YukiSU commit or release, check command exit status, and use JSON output where the command provides it.
+See [Boot-image commands](/en/dev/boot-images/) for image parameters and [YRCP v3](/en/dev/ramdisk-protocol/) for the Ramdisk binary protocol. For other commands, use help from the exact build and [`userspace/ksud/src/cli.cpp`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/cli.cpp). Third-party tools should pin a YukiSU commit or release, check command exit status, and use JSON output where the command provides it.
 
 When upgrading the dependency, recheck the UAPI, command arguments and response fields your tool uses. See the [Build guide](/en/dev/build/) for build and device-test steps.
 
 ## Features and the default root environment
 
-v1.8.0 defines 13 features. Former IDs `5` and `100` are removed and remain reserved. App profiles now control WebView unmounting; do not write the retired `webview_zygote_umount` or `enhanced_security` settings.
+v1.9.0 defines 13 features. Former IDs `5` and `100` are removed and remain reserved. App profiles now control WebView unmounting; do not write the retired `webview_zygote_umount` or `enhanced_security` settings.
 
 Read the live kernel value and saved configuration separately:
 
@@ -72,7 +72,7 @@ ksud late-load --kmi android14-6.1
 
 Use `ksud soft-reboot-status --json` to query support and the last result. `ksud soft-reboot` restarts Android and replays the corresponding module stages; it neither reloads the kernel nor executes preinit.
 
-- [CLI arguments](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/cli_args.cpp)
-- [Temporary loading](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/late_load.cpp)
-- [Guarded unload](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/unload.cpp)
-- [Feature configuration and migration](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp)
+- [CLI arguments](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/cli_args.cpp)
+- [Temporary loading](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/late_load.cpp)
+- [Guarded unload](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/unload.cpp)
+- [Feature configuration and migration](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/core/feature.cpp)

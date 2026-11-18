@@ -21,7 +21,7 @@ YukiZygisk 自行实现内核观测、入口重定向、Zygote 运行库、模�
 
 ## 集成版与独立模块版
 
-本章描述随 YukiSU v1.8.0 分发的集成版：内核 Hook 在 `kernelsu.ko`，配置、payload 部署、启动与诊断由 YukiSU 的 `ksud` 和管理器负责。更新集成版时，通过 YukiSU 的安装/更新流程同步 LKM 和用户空间组件。独立模块版使用自己的安装包、内核组件和更新流程，两者的二进制不能混装。
+本章描述随 YukiSU v1.9.0 分发的集成版：内核 Hook 在 `kernelsu.ko`，配置、payload 部署、启动与诊断由 YukiSU 的 `ksud` 和管理器负责。更新集成版时，通过 YukiSU 的安装/更新流程同步 LKM 和用户空间组件。独立模块版使用自己的安装包、内核组件和更新流程，两者的二进制不能混装。
 
 ## 启用条件
 
@@ -81,6 +81,6 @@ YukiSU LKM 只支持 ARM64 内核设备。YukiZygisk payload 同时包含 `arm64
 
 ## 源码参考
 
-- [启动与恢复](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yukizygisk_daemon.cpp)
-- [内核 exec 入口](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/feature/yukizygisk/exec.c)
-- [早期快照](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yukizygisk_snapshot.cpp)
+- [启动与恢复](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/yukizygisk_daemon.cpp)
+- [内核 exec 入口](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/feature/yukizygisk/exec.c)
+- [早期快照](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/yukizygisk_snapshot.cpp)

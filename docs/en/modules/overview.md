@@ -47,7 +47,7 @@ uname -r
 
 Use LF line endings. Derive the module path from the script location instead of hardcoding the install-time `modules_update` path. Add `customize.sh` for installation customization; the installer sources it with `MODPATH`, `ui_print` and `abort` available, then removes it. Place system files under `system/`; see [Module mounting](/en/modules/magic-mount/) for how they replace system paths.
 
-Module packages use a ZIP container. The v1.8.0 extraction path supports Store, Deflate, BZip2, LZMA and XZ entries; this does not add `.tar.xz` or `.7z` support. Prefer Deflate when supporting older managers and test installation on them.
+Module packages use a ZIP container. The installer supports Store, Deflate, BZip2, LZMA and XZ entries; this does not add `.tar.xz` or `.7z` support. Prefer Deflate when supporting older managers and test installation on them.
 
 To run this operation once and discard the extracted package, use a [one-shot script](/en/modules/one-shot/) without installing an ordinary module.
 
@@ -194,6 +194,6 @@ Full YukiSU uninstall restores and flashes the boot image first. If restoration 
 
 The module list can show both ordinary Zygisk and Native ZN labels for one module. It no longer summarizes all processes with a single “loaded” state. Enable YukiZygisk for these modules and inspect injection status for their target processes.
 
-Source references: [module.cpp](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module.cpp), [init_event.cpp](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/init_event.cpp), [installer.sh](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/assets/installer.sh), [module_compat.cpp](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module_compat.cpp).
+Source references: [module.cpp](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module.cpp), [init_event.cpp](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/init_event.cpp), [installer.sh](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/assets/installer.sh), [module_compat.cpp](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module_compat.cpp).
 
-Also see [ZIP](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/archive_zip.cpp), [Action](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/module/ModuleActionAvailability.kt), [Uninstall](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/utils.cpp).
+Also see [ZIP](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/archive_zip.cpp), [Action](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/module/ModuleActionAvailability.kt), [Uninstall](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/utils.cpp).

@@ -20,13 +20,13 @@ YukiSU keeps KernelSU-style authorization and module workflows, provides its own
 | Features | `0–4`, `6`, and `101–107` | `0–4` and `6`; `5` remains unused |
 | Extensions | Kasumi, SuperKey, dynamic-manager compatibility, UTS View, ImgPatch, partition tools | These YukiSU private interfaces are not provided |
 
-Official support, mounting, and Zygisk statements come from the pinned [FAQ](https://github.com/tiann/KernelSU/blob/28db74f6f4692e97006ce9ebd8b19b9cc614b5b7/website/docs/guide/faq.md); see the [build guide](https://github.com/tiann/KernelSU/blob/28db74f6f4692e97006ce9ebd8b19b9cc614b5b7/website/docs/guide/how-to-build.md) for release-build scope. For either project, install an LKM matching the target kernel’s KMI, symbols, and configuration.
+Official support, mounting, and Zygisk statements come from the pinned [FAQ](https://github.com/tiann/KernelSU/blob/64833c005eca6a8dc3d73ec2d37d84c37e0d9ad2/website/docs/guide/faq.md); see the [build guide](https://github.com/tiann/KernelSU/blob/64833c005eca6a8dc3d73ec2d37d84c37e0d9ad2/website/docs/guide/how-to-build.md) for release-build scope. For either project, install an LKM matching the target kernel’s KMI, symbols, and configuration.
 
 ## Hooks and features
 
 TSR means Tracepoint Syscall Redirect. YukiSU follows the KernelSU LKM syscall-hook model with its own policies and extensions. This is not another level of root and does not make `.ko` or `ksud` binaries interchangeable.
 
-Both projects leave historical WebView feature ID 5 unused. YukiSU v1.8.0 configures WebView unmounting through the WebView Zygote app profile and removes Enhanced security ID 100. ID 6 restricts trusted session origins after shell is authorized. YukiSU IDs 105–107 cover Kasumi su, the Kasumi switch, and mount-view cleanup. See [Feature controls](/en/manager/feature-control/).
+Both projects leave historical WebView feature ID 5 unused. YukiSU configures WebView unmounting through the WebView Zygote app profile and removes Enhanced security ID 100. ID 6 restricts trusted session origins after shell is authorized. YukiSU IDs 105–107 cover Kasumi su, the Kasumi switch, and mount-view cleanup. See [Feature controls](/en/manager/feature-control/).
 
 ## Module compatibility
 
@@ -42,9 +42,9 @@ Use each project's matching APK, `ksud`, and LKM. For migration, follow [Switchi
 
 ## Compared versions and source code
 
-This comparison covers YukiSU v1.8.0 (`9d046af4`) and KernelSU mainline snapshot `28db74f6`, checked on 2026-11-02. For older builds, read that version’s release notes first.
+This comparison uses YukiSU v1.9.0 (`a66faee72`) and KernelSU mainline as of that release on November 16, 2026 (`64833c00`).
 
-- [YukiSU features](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/feature.h)
-- [YukiSU mount selection](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/metamodule.cpp)
-- [KernelSU feature definitions](https://github.com/tiann/KernelSU/blob/28db74f6f4692e97006ce9ebd8b19b9cc614b5b7/userspace/ksud/src/feature_id.rs)
-- [KernelSU KMI matrix](https://github.com/tiann/KernelSU/blob/28db74f6f4692e97006ce9ebd8b19b9cc614b5b7/.github/workflows/build-lkm.yml)
+- [YukiSU features](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/feature.h)
+- [YukiSU mount selection](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/metamodule.cpp)
+- [KernelSU feature definitions](https://github.com/tiann/KernelSU/blob/64833c005eca6a8dc3d73ec2d37d84c37e0d9ad2/userspace/ksud/src/feature_id.rs)
+- [KernelSU KMI matrix](https://github.com/tiann/KernelSU/blob/64833c005eca6a8dc3d73ec2d37d84c37e0d9ad2/.github/workflows/build-lkm.yml)

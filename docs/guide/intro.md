@@ -5,19 +5,19 @@ title: 介绍
 
 # YukiSU 介绍
 
-YukiSU 是面向 **Android 12+、ARM64 GKI 2.0** 设备的内核级 Root 方案，fork 自 [SukiSU-Ultra](https://github.com/ShirkNeko/SukiSU-Ultra)。它使用 LKM 内核模块、C++ 用户空间与自己的管理器，支持 KernelSU 风格的授权、App Profile 和模块生态。
+YukiSU 可以让你在支持的 Android 手机上决定哪些应用能用 Root，也能安装模块、修补启动镜像。它从 [SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra) 发展而来，沿用 KernelSU 的应用授权和模块格式。
 
-第一次使用，请从[快速开始](/guide/get-started/)安装。已经在用 YukiSU，请按[更新指南](/guide/update/)升级并检查配置迁移。
+第一次用 YukiSU，可以从[快速开始](/guide/get-started/)检查设备、下载管理器。手机上已经装了旧版，请先看[升级步骤](/guide/update/)再动手。
 
-本站以 **v1.8.0（2026-11-02）** 为基线，管理器版本码为 **10670**。功能入口、命令参数和配置行为均按这一版本说明。
+本文档对应 2026 年 11 月 16 日发布的 **v1.9.0**，管理器版本码为 **10745**。这一版换了包名和签名，如果旧版还在，安装后手机上会多出一个 YukiSU 图标。[v1.9.0 发布说明](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.9.0)
 
-## 由哪些组件组成
+## 管理器、内核模块和 `ksud` 各管什么
 
 | 组件 | 职责 |
 | --- | --- |
-| `kernelsu.ko` | 内核授权、Hook、Feature、App Profile 与 Kasumi 能力 |
+| `kernelsu.ko` | 运行在内核里的模块（LKM），负责执行 Root 授权、应用配置与 Kasumi 规则 |
 | `ksuinit` / ImgPatch bootstrap | 分别在 Ramdisk 或内核镜像布局中加载 LKM |
-| `ksud` 与 `su` | 模块、安装、策略、诊断，以及用户空间提权入口 |
+| `ksud` 与 `su` | `ksud` 负责安装、运行模块和收集诊断，应用通过 `su` 请求 Root |
 | Manager | 授权、配置、安装、模块与分区维护界面 |
 | 内置 Kagami / 外部 MetaModule | 把模块文件挂到系统路径 |
 | YukiZygisk | 可选的 Zygisk 与 Native ZN 注入运行时 |
@@ -36,7 +36,7 @@ Root 正常、Zygisk 模块无效时，打开 YukiZygisk 页面检查目标进�
 
 Android 11 及以下、GKI 1.0、non-GKI、ARM32、x86_64 和 built-in `CONFIG_KSU=y` 不在支持范围。YukiZygisk 的 32 位组件用于 ARM64 设备上的 32 位应用，不代表支持 ARM32 设备。
 
-完整构建维护 8 个标准 KMI，从 `android12-5.10` 到 `android17-6.18`。系统版本不能直接决定选哪枚 LKM，仍需匹配 KMI、vermagic、符号和配置；见[兼容范围](/guide/compatibility/)。
+正式版提供 8 个内核模块，从 `android12-5.10` 到 `android17-6.18`。手机升级 Android 后，内核可能还沿用旧版本。挑选 LKM 时，请按设备内核的 KMI（内核模块接口）对照[兼容范围](/guide/compatibility/)。
 
 ## 当前功能
 
@@ -52,11 +52,11 @@ Android 11 及以下、GKI 1.0、non-GKI、ARM32、x86_64 和 built-in `CONFIG_K
 
 ## 使用前要分清
 
-安装 APK 不等于已经加载 LKM；同步 `ksud` 不等于更新启动镜像。YukiSU 的 TSR 沿用 KernelSU LKM 的 tracepoint syscall redirect 模型，但两边二进制和私有接口不可随意互换。
+安装 APK 后就可以打开管理器。要让应用用上 Root，还要加载和设备匹配的 LKM。以后只同步 `ksud`，改动的是设备上的用户空间工具。要换启动镜像里的 LKM，还需要修补镜像并完整重启。
 
-SuperKey 认证管理器 UID，不是应用 Root 密码。YukiZygisk 可关闭，基础 Root 与普通模块仍可运行。模块安装成功、挂载完成和功能实际有效也需要分别确认。
+官方管理器默认靠签名认证。自己签名的管理器还可以用 SuperKey。普通应用能否获取 Root，由你在超级用户页决定。只有使用 Zygisk 模块时才需要开启 YukiZygisk。
 
-安装前选好匹配 KMI 的 LKM，模块则按作者列出的 Android、ABI 和接口要求选择。遇到故障，请在报告中写出 LKM、`ksud` 与 Manager 的完整版本，按[排查指南](/troubleshoot/common/)定位。
+模块有各自的 Android 版本、架构和接口要求，安装前看作者的说明。遇到问题需要反馈时，附上管理器、运行中的 LKM 和设备上 `ksud` 的完整版本。[排查指南](/troubleshoot/common/)
 
 ## 文档入口与社区
 

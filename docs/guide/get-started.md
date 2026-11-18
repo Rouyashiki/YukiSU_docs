@@ -5,7 +5,7 @@ title: 快速开始
 
 # 快速开始
 
-这页只做一件事：把 YukiSU 装上，并确认最基本的 Root 能用。
+第一次安装 YukiSU，可以按下面的步骤选镜像、安装并检查 Root。手机里已经有旧版管理器？请直接看[从旧版升级](/guide/update/)，先保留旧应用里的备份。
 
 管理器能修补镜像、安装 LKM，但安装前先确认目标 KMI、启动分区和槽位。下面按这个顺序操作。
 
@@ -39,9 +39,13 @@ YukiSU 目前只支持下面这类设备：
 
 ## 1. 下载需要的文件
 
-从 [v1.8.0 发布页](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.8.0)下载 `YukiSU_v1.8.0_10670-arm64-v8a-release.apk`。`.asc` 是签名文件，Source code 是源码压缩包，都不能作为 APK 安装。
+打开 [v1.9.0 发布页](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.9.0)，下载并安装 **`YukiSU_v1.9.0_10745-arm64-v8a-release.apk`**。包名是 `org.rouyashiki.yukisu`。同名的 `.asc` 用来验证下载签名，安装时选 `.apk`。
 
-完整 Manager 构建内置 8 个标准 KMI LKM。单目标构建只含选定的 KMI；下载后先确认安装页能选到你的目标。准备以下文件：
+::: details 想核对下载的 APK？
+文件的 SHA-256 为 `ddb95876a343442730786c19241d0e575baebe4d1711506f5305adea319eed73`。用 Android SDK 的 `apksigner verify --print-certs` 检查 APK 时，签名证书的 SHA-256 应为 `45bd30fe301b6a6ff798e0ae930606d5f443c16f078a95ec9d82d326498ed1c3`。前一个值用来核对这个版本的文件，后一个值用来核对签名者。[官方内核信任的证书](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/manager/manager_sign.h)
+:::
+
+正式版 APK 里有 8 个标准 KMI 对应的内核模块。自己编译的单目标 APK 只含所选的那一个。开始前，确认安装页里有适合你设备的 KMI，并准备好下面的文件。
 
 - **YukiSU Manager APK**：用来安装、授权、管理模块和看诊断；
 - **当前固件的原厂启动镜像**：首次安装与恢复都要用；
@@ -112,7 +116,7 @@ YukiSU 目前只支持下面这类设备：
 1. 首页能识别 YukiSU，LKM 版本符合预期；
 2. 管理器已经通过签名或你选择的方式完成认证；
 3. 首页报告的 Ramdisk / ImgPatch / late-load 运行方式符合预期；
-4. 内置 `ksud` 与 `/data/adb/ksud` 的实际完整性状态匹配；需要时从主页手动同步，自动同步默认关闭；
+4. 首页的 `ksud daemon` 显示设备上的文件与管理器内置版本一致。如果首次打开时还没通过认证，可以在这里手动同步。
 5. 给一个可信测试应用授权，确认 `su` 能正常进入和退出；
 6. 再重启一次，确认这些状态没有丢。
 

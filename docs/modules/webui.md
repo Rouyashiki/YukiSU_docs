@@ -27,7 +27,7 @@ YukiSU Release 构建会强制关闭 WebView 调试，也不会打包 Eruda。�
 { "webui-engine": "wx" }
 ```
 
-也支持以管理器包名为键的对象；当前管理器包名为 `com.anatdx.yukisu`，未匹配时读取 `en` 键。该配置不写在 `module.prop` 中。
+如果按管理器指定 WebUI 引擎，请把 v1.9.0 的配置写在 `org.rouyashiki.yukisu` 键下。还支持旧管理器的模块可以同时保留 `com.anatdx.yukisu` 键。当前包名没有对应项时，管理器会读取 `en`。
 
 ## 本地资源与应用图标
 
@@ -43,7 +43,7 @@ KSU WebUI 可以使用仓库 `js/` 发布的 `kernelsu` 包：
 yarn add kernelsu
 ```
 
-v1.8.0 源码中的 JS SDK 版本为 `3.3.0`，包含下文的 `pm` 和 `io`。页面若已打包旧 SDK，需要更新前端依赖并重新构建；升级管理器 APK 不会改写模块内的 JavaScript。
+v1.9.0 附带的 JS SDK 版本为 `3.3.0`，包含下文的 `pm` 和 `io`。页面若已打包旧 SDK，需要更新前端依赖并重新构建；升级管理器 APK 不会改写模块内的 JavaScript。
 
 公开 API：
 
@@ -69,11 +69,11 @@ child.on('exit', code => {
 })
 ```
 
-完整参数和返回值以 [`js/README.md`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/js/README.md) 与 [`js/index.d.ts`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/js/index.d.ts) 为准。
+完整参数和返回值以 [`js/README.md`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/js/README.md) 与 [`js/index.d.ts`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/js/index.d.ts) 为准。
 
 ## 多用户应用查询
 
-v1.8.0 提供 `pm.support` 与 `pm.version`，当前接口版本为 `1`。管理器在打开页面前加载应用清单。`support` 在 JavaScript 库加载时计算，需在宿主桥接就绪后导入。YukiSU 的 KSU WebUI 和 WebUI X 都提供该桥接。
+用 `pm.support` 检查支持情况，`pm.version` 返回当前接口版本 `1`。管理器在打开页面前加载应用清单。`support` 在 JavaScript 库加载时计算，需在宿主桥接就绪后导入。YukiSU 的 KSU WebUI 和 WebUI X 都提供该桥接。
 
 ```js
 import { pm } from 'kernelsu'
@@ -109,7 +109,7 @@ for (const record of records) {
 
 ## Root 文件 API
 
-v1.8.0 两种引擎均提供 `io.support`、`io.version`，当前版本为 `1`。调用是同步的，使用管理器的 Root shell。这些接口可以访问模块目录以外的路径；校验文件名，并把操作限定在模块自己管理的路径内。
+两种 WebUI 引擎均提供 `io.support`、`io.version`，当前版本为 `1`。调用是同步的，使用管理器的 Root shell。这些接口可以访问模块目录以外的路径；校验文件名，并把操作限定在模块自己管理的路径内。
 
 | API | 主要操作与返回值 |
 | --- | --- |
@@ -203,6 +203,6 @@ URL、表单、配置文件和网络响应中的值都按外部输入处理。�
 - 需要修改系统文件：上述界面/逻辑之外，仍要普通模块与[内置或外部挂载后端](/modules/magic-mount/)；
 - 需要进入 Zygote 或指定原生进程：使用[普通 Zygisk 模块](/yukizygisk/modules/)或 [Native ZN API](/yukizygisk/native-zn/)，不是 WebUI。
 
-桥接行为依据：[WebViewInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/WebViewInterface.kt)、[ModuleConfig.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/ModuleConfig.kt)、[本地资源处理](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/SuFilePathHandler.kt)。
+桥接行为依据：[WebViewInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/WebViewInterface.kt)、[ModuleConfig.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/ModuleConfig.kt)、[本地资源处理](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/SuFilePathHandler.kt)。
 
-包与文件接口：[KsuPm.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/pm/KsuPm.kt), [KsuIO.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/file/KsuIO.kt), [FileInputStreamInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/file/FileInputStreamInterface.kt), [FileOutputStreamInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/file/FileOutputStreamInterface.kt), [RootFileOutputStream.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/webui/file/RootFileOutputStream.kt).
+包与文件接口：[KsuPm.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/pm/KsuPm.kt), [KsuIO.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/file/KsuIO.kt), [FileInputStreamInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/file/FileInputStreamInterface.kt), [FileOutputStreamInterface.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/file/FileOutputStreamInterface.kt), [RootFileOutputStream.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/webui/file/RootFileOutputStream.kt).

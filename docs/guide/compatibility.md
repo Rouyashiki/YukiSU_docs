@@ -20,9 +20,9 @@ title: 兼容范围
 
 Android 11 及以下、GKI 1.0、non-GKI、ARM32、x86_64 和 built-in `CONFIG_KSU=y` 不在 YukiSU 的正式支持范围内。这些设备请使用其他 Root 方案，不要强行加载 YukiSU LKM。
 
-## v1.8.0 包含的 KMI
+## v1.9.0 包含的 KMI
 
-[v1.8.0 发布页](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.8.0)提供下面 8 个 KMI 的 LKM，名称为 `<KMI>_kernelsu.ko`。仓库完整构建使用同一组目标：
+[v1.9.0 发布页](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.9.0)提供下面 8 个 KMI 的 LKM，名称为 `<KMI>_kernelsu.ko`。仓库完整构建使用同一组目标：
 
 | KMI 目标 | 对应的 GKI 世代 |
 | --- | --- |
@@ -66,7 +66,7 @@ adb shell uname -r
 
 ## 源码
 
-- [本地/CI KMI 矩阵](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/.github/workflows/build-lkm.yml)
-- [Windows 完整构建脚本](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/scripts/build.ps1)
-- [Linux/macOS 完整构建脚本](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/scripts/build.sh)
-- [用户空间 API 31 编译期门槛](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/common/api_floor.hpp)
+- [本地/CI KMI 矩阵](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/.github/workflows/build-lkm.yml)
+- [Windows 完整构建脚本](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/scripts/build.ps1)
+- [Linux/macOS 完整构建脚本](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/scripts/build.sh)
+- [用户空间 API 31 编译期门槛](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/common/api_floor.hpp)

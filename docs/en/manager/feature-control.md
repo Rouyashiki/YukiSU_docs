@@ -39,7 +39,7 @@ Kernel Umount, App Profile's module-unmount policy, WebView unmount, and mount v
 
 ## Upgrade defaults and module ownership
 
-After upgrading to v1.8.0, `ksud` performs a one-time defaults migration that enables and saves Feature 102, including when an old configuration saved it as disabled. A manual change made after migration is preserved. Existing custom Root Profile flags and SELinux domains are not overwritten by the global default; edit those profiles individually when needed.
+When upgrading from a release older than v1.8.0, `ksud` performs a one-time defaults migration that enables and saves Feature 102, including when an old configuration saved it as disabled. A manual change made after migration is preserved. Existing custom Root Profile flags and SELinux domains are not overwritten by the global default; edit those profiles individually when needed.
 
 A feature marked “Managed by module” cannot be changed directly in Manager or with an ordinary `ksud feature set/set-save` command. Change it through the owning module, or disable that module and reboot before using Feature controls. su compatibility IDs 0, 101, and 105 form a coupled group: a module that owns one controls the group. Related transitions required to disable Kasumi are also restricted. Boot-forced values take precedence over module ownership.
 
@@ -65,6 +65,8 @@ Mode changes persist related Features and attempt to restore the previous state 
 
 The custom su path defaults to `/system/bin/su` and is editable only in Kasumi mode. It must be a valid absolute path with an existing parent directory and must not overwrite an existing file. Update the su path in your tools after changing it; tools that search only the old path will not find the new entry point.
 
+When you enable Magisk su compatibility with default module unmounting on, the Manager warns that some apps may miss the root prompt. If this happens, turn off **Unmount modules** in the affected app’s profile, reopen the app, and request root again.
+
 ## Three separate shell settings
 
 - **Always grant shell root:** an installation-time shell authorization policy.
@@ -83,6 +85,6 @@ Change one item at a time and check actual values and errors after saving. Resta
 
 ## Source references
 
-[Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/feature.h), [FeatureControlScreen.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/feature/FeatureControlScreen.kt), [SuCompatMode.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/feature/SuCompatMode.kt), [shell_su_adb_only.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/feature/shell_su_adb_only.c).
+[Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/feature.h), [FeatureControlScreen.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/feature/FeatureControlScreen.kt), [SuCompatMode.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/feature/SuCompatMode.kt), [shell_su_adb_only.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/feature/shell_su_adb_only.c).
 
-[Feature persistence and ownership](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp).
+[Feature persistence and ownership](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/core/feature.cpp).

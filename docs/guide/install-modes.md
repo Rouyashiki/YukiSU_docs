@@ -19,7 +19,7 @@ title: 安装与镜像模式
 
 “直接安装”会写块设备；“选择镜像修补”只生成文件。不要把页面入口的“直接”与下面的“内核直嵌”混为一谈。
 
-v1.8.0 的直接安装和未使用槽位安装不会再把修补结果复制到 Download。安装成功后查日志和目标分区，不要因下载目录没有新镜像就重复安装。需要可留存的镜像文件时，选择本地或远程镜像修补。
+直接安装和未使用槽位安装会把镜像写入目标分区。安装成功后查日志和目标分区，不要因下载目录没有新镜像就重复安装。需要可留存的镜像文件时，选择本地或远程镜像修补。
 
 ## 两种持久安装布局
 
@@ -83,7 +83,7 @@ v1.8.0 的直接安装和未使用槽位安装不会再把修补结果复制到 
 
 ## 源码
 
-- [管理器安装流程](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Install.kt)
-- [`boot-patch` 与恢复实现](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch.cpp)
-- [`boot-patch-v2` ImgPatch 实现](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch_v2.cpp)
-- [远程镜像提取实现](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/core/tasks/ExtractImage.kt)
+- [管理器安装流程](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Install.kt)
+- [`boot-patch` 与恢复实现](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_patch.cpp)
+- [`boot-patch-v2` ImgPatch 实现](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_patch_v2.cpp)
+- [远程镜像提取实现](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/core/tasks/ExtractImage.kt)

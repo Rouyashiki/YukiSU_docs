@@ -5,7 +5,7 @@ title: Get started
 
 # Get started
 
-Follow these steps to install YukiSU and test basic root access.
+Use this guide for a first install. If you already have an older YukiSU Manager, start with the [upgrade guide](/en/guide/update/) while you can still access its private backups.
 
 The manager patches images and installs the LKM. Before starting, identify the target KMI, boot partition, and slot; the steps below explain what to check.
 
@@ -39,7 +39,11 @@ Current standard builds cover eight KMI targets from Android 12/5.10 through And
 
 ## 1. Download the files
 
-Download `YukiSU_v1.8.0_10670-arm64-v8a-release.apk` from the [v1.8.0 release](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.8.0). The `.asc` file is a signature and Source code is a source archive; neither is an installable APK.
+Download and install **`YukiSU_v1.9.0_10745-arm64-v8a-release.apk`** from the [v1.9.0 release](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.9.0). Its package name is `org.rouyashiki.yukisu`. The matching `.asc` file is for verifying the download.
+
+::: details Verify the downloaded APK
+The SHA-256 of this release file is `ddb95876a343442730786c19241d0e575baebe4d1711506f5305adea319eed73`. To check who signed it, run the Android SDK’s `apksigner verify --print-certs` on the APK. The certificate SHA-256 is `45bd30fe301b6a6ff798e0ae930606d5f443c16f078a95ec9d82d326498ed1c3`. [Certificates trusted by the release kernel](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/manager/manager_sign.h)
+:::
 
 Full Manager builds embed eight standard-KMI LKMs. Single-target builds contain only the selected KMI; confirm that the installation page offers your target. Prepare these files:
 
@@ -110,7 +114,7 @@ After boot:
 1. Home recognizes YukiSU and shows the expected LKM version.
 2. Manager authentication succeeded.
 3. The reported Ramdisk / ImgPatch / late-load mode matches the intended layout.
-4. The actual integrity state of embedded `ksud` and `/data/adb/ksud` matches; synchronize manually if needed, because auto-sync is off by default.
+4. On Home, check that `ksud daemon` matches the bundled copy. If the Manager was still waiting for authentication when it opened, tap the row to sync manually.
 5. One trusted test app can open and close an authorized `su` session.
 6. The same state survives one more reboot.
 

@@ -47,7 +47,7 @@ uname -r
 
 脚本使用 LF 换行；通过脚本自身位置计算模块路径，不写死安装时的 `modules_update` 路径。需要定制安装时添加 `customize.sh`，它由安装器加载，可使用 `MODPATH`、`ui_print` 与 `abort`，安装后会被清理。系统文件放进 `system/`，覆盖方式见[模块挂载](/modules/magic-mount/)。
 
-模块包使用 ZIP 容器。v1.8.0 的解压链支持 Store、Deflate、BZip2、LZMA 和 XZ 条目；这不等于接受 `.tar.xz` 或 `.7z`。面向旧管理器发布时优先使用 Deflate，并实际测试安装。
+模块包使用 ZIP 容器。安装器支持 Store、Deflate、BZip2、LZMA 和 XZ 条目；这不等于接受 `.tar.xz` 或 `.7z`。面向旧管理器发布时优先使用 Deflate，并实际测试安装。
 
 如果只想运行上述动作一次并立刻清理包内容，使用[一次性脚本](/modules/one-shot/)，无需安装普通模块。
 
@@ -194,6 +194,6 @@ YukiZygisk 还有一个独立的**注入安全模式**：某个同名 Zygote 达
 
 模块列表会同时标出模块包含的普通 Zygisk 和 Native ZN 类型，不再用单个“已加载”状态概括所有进程。使用这两类模块时，还需启用 YukiZygisk，并查看目标进程的注入状态。
 
-源码依据：[module.cpp](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module.cpp)、[init_event.cpp](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/init_event.cpp)、[installer.sh](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/assets/installer.sh)、[module_compat.cpp](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module_compat.cpp)。
+源码依据：[module.cpp](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module.cpp)、[init_event.cpp](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/init_event.cpp)、[installer.sh](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/assets/installer.sh)、[module_compat.cpp](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module_compat.cpp)。
 
-另见 [ZIP](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/archive_zip.cpp), [Action](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/module/ModuleActionAvailability.kt), [Uninstall](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/utils.cpp).
+另见 [ZIP](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/archive_zip.cpp), [Action](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/module/ModuleActionAvailability.kt), [Uninstall](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/utils.cpp).

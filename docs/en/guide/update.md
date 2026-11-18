@@ -5,55 +5,51 @@ title: Update
 
 # Update YukiSU
 
-The manager APK, installed `ksud`, traditional-Ramdisk `ksuinit`, ImgPatch capsule and LKM are separate components. Updating one is not automatically a complete update.
+## Switching from the old Manager to v1.9.0
 
-## Upgrading to v1.8.0
+**Install the v1.9.0 APK manually and keep the old Manager for now.** The official package name changed from `com.anatdx.yukisu` to `org.rouyashiki.yukisu`, and the APK has a new signing certificate. Android installs it as a separate app, so you may see two YukiSU icons. The old Manager’s CI updater cannot make this switch.
 
-Download the APK with version code **10670** from the [v1.8.0 release](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.8.0). Keep stock images, an App Profile backup, and module configuration. Synchronize `ksud`, update the matching-KMI LKM as described below, then reboot fully.
+1. **Save what you need from the old app.** Note any module and plugin repository URLs you added and export the backups you want to keep to Downloads or a computer. Check your last patch log. If the only copy of your stock image is in the old app’s private `boot_backup/` directory, get a separate copy that matches your current firmware.
+2. **Install the new Manager.** Download `YukiSU_v1.9.0_10745-arm64-v8a-release.apk` from the [v1.9.0 release](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.9.0). To tell the icons apart, long-press one and open App info. Look for **v1.9.0 (10745)** or the new package name, depending on what your device displays.
+3. **Update the kernel module (LKM) using your usual method.** For a boot-image installation, use the v1.9.0 LKM for your kernel’s KMI and reboot fully. An old kernel may only trust the old certificate. If the new Manager cannot install directly, use it to patch the stock image for your current firmware, then flash it using your device’s usual method. See [Installation and image modes](/en/guide/install-modes/) for the partition and slot. If you use [temporary root](/en/guide/jailbreak-mode/), fully reboot to end the old session and use the new Manager to load the matching LKM again.
+4. **Check the result in the new Manager.** Home should show the running v1.9.0 LKM. Tap `ksud daemon` and sync if the installed copy differs from the bundled one. Try root with a trusted app and check your modules and repositories. If you use Kasumi, its status page should show API 19.
 
-- The default root domain changes to `u:r:ksu:s0`. Existing custom domains and per-app flags remain, with compatibility handling for legacy `su` policies.
-- Feature 102 is enabled during its first migration even if its old global value was off. Later manual choices are retained. Check apps using the default profile; see [App Profile](/en/manager/app-profile/).
-- WebView module unmounting moves to the non-root profile under Superuser → WebView Zygote. Feature 5 and the removed Enhanced security ID 100 are no longer used. Remove both IDs when updating old forced boot settings or module scripts.
-- Classic UI and aggressive Kasumi mount hiding are removed. Keep ordinary hiding configuration and check saved and applied rules on the [Kasumi](/en/manager/kasumi/) page.
-- Emulated soft reboot checks recovery capabilities first. After a request is accepted, wait for its final recovery result. LKM and boot-configuration updates require a full reboot. See [Soft reboot](/en/manager/soft-reboot/).
+### What carries over?
 
-## Manager
+| Where the data lives | What to do |
+| --- | --- |
+| Shared data under `/data/adb`, including installed modules and their configuration | Leave it in place. The new Manager can read it once the kernel recognizes the app. |
+| The old app’s settings, repository sources, and private backups | Recreate your preferences and add your repositories in the new app. Keep any backups you need before removing the old APK. |
+| A SuperKey you saved yourself | Enter it again in the new Manager. Android excludes the saved key from backups and device transfers. Official signature authentication works with this field empty. |
 
-- Stable releases: [GitHub Releases](https://github.com/Rouyashiki/YukiSU/releases)
-- CI builds: explicitly enable the CI update option in settings
+The official v1.9.0 LKM trusts both certificates during the transition. The new `ksud` opens the new Manager by default, including for root prompts and when late-load finishes. Once you have everything you need, you can remove the old package through Android’s app info. The Manager’s permanent uninstall action removes YukiSU from the device.
 
-The CI path verifies a PGP signature under a pinned key, then checks the APK signature and build metadata. Signatures verify the publisher and file integrity. Use stable releases for everyday use; switch to CI to test fixes still in development.
+### Other changes you may notice
 
-After installing the APK, check the home page. Manager compares the actual ELF content of embedded `ksud` and `/data/adb/ksud` and offers manual synchronization. Auto-update is off by default. When enabled, it checks and synchronizes at app cold start only if kernel Manager authentication has already succeeded. Otherwise it skips the attempt; synchronize manually after authentication. Runtime replacement of the installed path is recorded and raised as an integrity alert.
+- **If you use built-in Kagami**, late-load mounts module files before the later scripts run. This release also fixes old files left behind after uninstalling a module. [Module mounting](/en/modules/magic-mount/)
+- **If YukiZygisk reports mixed results**, some loads succeeded and others failed during the same Zygote session. Open the module details to find the record for the affected app. [YukiZygisk status](/en/yukizygisk/features/)
+- **If you use Magisk su compatibility**, the Manager warns you when default module unmounting could prevent a root prompt. You can change the setting for the affected app. [Feature controls](/en/manager/feature-control/)
 
-Synchronizing `ksud` does not replace the LKM, modify a boot image or reboot. When updating the LKM, also synchronize the matching `ksud` so new commands and resources are available.
+## Future updates
+
+Download stable builds from [GitHub Releases](https://github.com/Rouyashiki/YukiSU/releases). To try development builds, turn on **Check for CI updates** in the new Manager. It uses the [CI update site](https://yukisuupdates.rouyashiki.org/) and checks the repository, package name, APK signer, and build signature.
+
+Automatic `ksud` updates are on by default. On a cold start, the Manager compares its bundled `ksud` with `/data/adb/ksud` if the kernel already recognizes the app. If authentication finishes later, use the sync button on Home. This setting updates the device-side `ksud` only.
 
 ## LKM and boot components
 
-Use the manager's LKM patch/install flow for the current slot, inactive slot or a local/remote image source. Before updating, verify target KMI, that the bundled resources include it (current full builds extend through `android17-6.18`), target partition/slot, a recoverable stock image, component provenance, and whether the resulting layout should remain Ramdisk or switch to boot-only ImgPatch.
+Keep a stock image for your current firmware on a computer. For a Ramdisk installation, patch `boot` or `init_boot` according to your device layout. ImgPatch uses the `boot` image containing the kernel. See [Installation and image modes](/en/guide/install-modes/) if you are switching layouts or the patcher reports a backup error.
 
-Update the LKM through the installation page. Ramdisk loads it from the boot Ramdisk; ImgPatch loads it from a capsule in the `boot` kernel. Both require updating the corresponding boot image.
+Direct installation writes to the target partition and records it in the install log. To keep a patched image file, choose local or remote image patching. Fully reboot to load the updated LKM and boot configuration.
 
-In v1.8.0, direct installation and installation to the inactive OTA slot no longer copy patched images to Download. Use local or remote image patching when you need an output file. For direct installation, retain the install log and a separate stock-image backup.
+## After an OTA
 
-ImgPatch repatching first tries to replace the LKM using metadata already stored in its capsule and falls back to full analysis when reuse is not possible. A transition between traditional Ramdisk and ImgPatch removes the other layout's payload first. Without a valid backup, restoration can use a verifiable, reversible capsule. Stop and retain the error if the backend cannot safely clean a Magisk Ramdisk, restore the capsule, or rebuild the backup. See [Installation and image modes](/en/guide/install-modes/) for options and recovery steps.
-
-## OTA
-
-“Install to inactive slot after OTA” is intended only after the OTA has completed and before the slot-switch reboot. The manager reads target KMI from `boot` in the inactive slot instead of reusing the running kernel's value. Do not continue with a guessed near-match if parsing fails.
-
-When OTA changes the kernel, an LKM valid on the old slot may no longer be valid. ImgPatch still writes `boot` in the target slot, while traditional Ramdisk chooses `boot` or `init_boot` from the target layout.
+On an A/B device, use **Install to inactive slot** after the OTA finishes and before rebooting into the new slot. Verify the slot, partition, and KMI on the install page. The Manager reads the KMI from the new slot’s `boot` image. If it cannot read it, check the OTA and the stock image before continuing.
 
 ## Updating configuration and modules
 
-- Keep an App Profile backup, module list, mount-backend settings, and boot configuration. Profile restoration rechecks app identity and UID; another device's UID is not automatically the correct authorization target.
-- Without an enabled external `metamount.sh`, current YukiSU uses built-in Kagami. Verify the selected backend after upgrading instead of assuming a missing MetaModule is an error.
-- Ordinary updates are merged at the next boot. Use [hot installation](/en/modules/hot-install/) only with explicit support and suitable conditions; preinit and init.rc take effect on the next full boot.
-- When repatching forced features, preinit, or a blacklist, retain every intended option. Configuration-only mode rebuilds managed settings from the current arguments instead of merging them incrementally. See [Boot configuration](/en/manager/boot-config/).
-- Compatibility-value overrides are not real upgrades. Record the actual build and override values separately.
+If you use forced boot settings, preinit, or a kernel module blocklist, select them again when patching. Configuration-only mode rebuilds the settings from the options you choose this time. Ordinary module updates are merged at the next boot. Use a full reboot for early boot scripts. When restoring an App Profile backup, check the app and Android user before applying its old grants. [Boot configuration](/en/manager/boot-config/) · [App Profile backups](/en/manager/app-profile/)
 
-## Verify after updating
+## Coming from a release older than v1.8.0?
 
-After a full boot, check Manager authentication, running LKM and installed `ksud`, one trusted app's root access, the selected mount backend, and required YukiZygisk targets. For preinit, confirm preparation first, then reboot fully and read the early action logs.
-
-See [Feature overview](/en/guide/features/) for available controls. If an older version lacks them, update the matching components as described above.
+If you skipped v1.8.0, check two settings. The default root domain is `u:r:ksu:s0`. The first migration enables Feature 102. Existing custom profiles keep their domains and flags. WebView module unmounting moved to **Superuser → WebView Zygote**. Remove retired Feature IDs 5 and 100 from old scripts and forced boot settings. See [App Profile](/en/manager/app-profile/) and [Feature controls](/en/manager/feature-control/).

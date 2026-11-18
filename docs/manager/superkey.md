@@ -7,7 +7,7 @@ title: SuperKey 认证
 
 SuperKey 是可选的**管理器认证密钥**，用于让自签名或私有管理器向内核认证身份。
 
-使用官方管理器时留空，默认通过受信任包名和 APK 签名认证。
+使用官方管理器时留空即可。v1.9.0 的官方 LKM 将新版签名列为首选，也保留了对旧签名的信任。如果你以前自己设过 SuperKey，换包后要在新管理器里重新输入。Android 的系统备份和换机迁移都不包含保存的密钥。
 
 ::: important 仅用于管理器认证
 SuperKey 认证成功后，调用方取得 YukiSU 管理器身份。应用的 Root 授权仍由超级用户列表和 App Profile 控制。
@@ -137,4 +137,4 @@ SuperKey 校验数据属于 LKM 的信任配置，不能只在管理器设置里
 
 ## 源码
 
-[superkey.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/manager/superkey.c), [supercall.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/supercall/supercall.c), [ksu.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/cpp/ksu.c).
+[superkey.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/manager/superkey.c), [supercall.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/supercall/supercall.c), [ksu.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/cpp/ksu.c).

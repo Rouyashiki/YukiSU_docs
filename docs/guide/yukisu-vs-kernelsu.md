@@ -20,13 +20,13 @@ YukiSU 保留 KernelSU 的授权和模块用法，提供自己的 C++ 用户空�
 | Feature | `0–4`、`6`、`101–107` | `0–4`、`6`；`5` 保留不用 |
 | 扩展能力 | Kasumi、SuperKey、动态管理器兼容值、UTS View、ImgPatch 与分区工具 | 不提供这些 YukiSU 私有接口 |
 
-上表的官方支持、挂载与 Zygisk 描述来自固定快照的 [FAQ](https://github.com/tiann/KernelSU/blob/28db74f6f4692e97006ce9ebd8b19b9cc614b5b7/website/docs/guide/faq.md)，发布构建取舍见[构建说明](https://github.com/tiann/KernelSU/blob/28db74f6f4692e97006ce9ebd8b19b9cc614b5b7/website/docs/guide/how-to-build.md)。安装时，两边都要使用与目标内核 KMI、符号和配置匹配的 LKM。
+上表的官方支持、挂载与 Zygisk 描述来自固定快照的 [FAQ](https://github.com/tiann/KernelSU/blob/64833c005eca6a8dc3d73ec2d37d84c37e0d9ad2/website/docs/guide/faq.md)，发布构建取舍见[构建说明](https://github.com/tiann/KernelSU/blob/64833c005eca6a8dc3d73ec2d37d84c37e0d9ad2/website/docs/guide/how-to-build.md)。安装时，两边都要使用与目标内核 KMI、符号和配置匹配的 LKM。
 
 ## Hook 与 Feature
 
 YukiSU 的 TSR 是 Tracepoint Syscall Redirect，沿用 KernelSU LKM 的 syscall hook 基础模型，并有自己的策略与扩展。它不是新的 Root 权限等级，也不能据此混用两边的 `.ko` 或 `ksud`。
 
-两边都将历史 WebView Feature ID 5 留空；YukiSU v1.8.0 使用 WebView Zygote 的 App Profile 配置模块卸载，并移除了 ID 100“增强安全”。ID 6 是 shell 已获授权后的可信会话限制。YukiSU 的 105–107 则覆盖 Kasumi su、Kasumi 总开关与挂载视图清理。具体值和条件见[功能控制](/manager/feature-control/)。
+两边都将历史 WebView Feature ID 5 留空；YukiSU 使用 WebView Zygote 的 App Profile 配置模块卸载，并移除了 ID 100“增强安全”。ID 6 是 shell 已获授权后的可信会话限制。YukiSU 的 105–107 则覆盖 Kasumi su、Kasumi 总开关与挂载视图清理。具体值和条件见[功能控制](/manager/feature-control/)。
 
 ## 现有模块怎么用
 
@@ -42,9 +42,9 @@ YukiSU 支持 KernelSU 风格的模块目录、脚本和 MetaModule 契约，也
 
 ## 对比版本与源码
 
-本文以 YukiSU v1.8.0（`9d046af4`）与 2026-11-02 核对的 KernelSU 主线快照 `28db74f6` 对比。使用旧版本时，先查看该版本的更新说明。
+本文对照 YukiSU v1.9.0（`a66faee72`）和它发布当天的 KernelSU 主线（`64833c00`）。
 
-- [YukiSU Feature](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/feature.h)
-- [YukiSU 内置与外部挂载选择](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/metamodule.cpp)
-- [KernelSU Feature 定义](https://github.com/tiann/KernelSU/blob/28db74f6f4692e97006ce9ebd8b19b9cc614b5b7/userspace/ksud/src/feature_id.rs)
-- [KernelSU KMI 矩阵](https://github.com/tiann/KernelSU/blob/28db74f6f4692e97006ce9ebd8b19b9cc614b5b7/.github/workflows/build-lkm.yml)
+- [YukiSU Feature](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/feature.h)
+- [YukiSU 内置与外部挂载选择](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/metamodule.cpp)
+- [KernelSU Feature 定义](https://github.com/tiann/KernelSU/blob/64833c005eca6a8dc3d73ec2d37d84c37e0d9ad2/userspace/ksud/src/feature_id.rs)
+- [KernelSU KMI 矩阵](https://github.com/tiann/KernelSU/blob/64833c005eca6a8dc3d73ec2d37d84c37e0d9ad2/.github/workflows/build-lkm.yml)

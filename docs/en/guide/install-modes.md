@@ -21,7 +21,7 @@ Direct install writes a block device; selecting an image only creates a file. Do
 
 ## Persistent installation layouts
 
-In v1.8.0, direct and inactive-slot installation no longer copy patched images to Download. Check the installation log and target partition after success; a missing download file is not a reason to reinstall. Use local or remote image patching when you need an output file to keep.
+Direct and inactive-slot installs write the patched image to the target partition. Check the installation log and target partition after success; a missing download file is not a reason to reinstall. Use local or remote image patching when you need an output file to keep.
 
 | Layout | Backend command | Modified area | Accepted images |
 | --- | --- | --- | --- |
@@ -83,7 +83,7 @@ For exact command-line parameters, continue with [Boot-image commands](/en/dev/b
 
 ## Source code
 
-- [Manager installation flow](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Install.kt)
-- [`boot-patch` and restore implementation](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch.cpp)
-- [`boot-patch-v2` ImgPatch implementation](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch_v2.cpp)
-- [Remote-image extraction](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/core/tasks/ExtractImage.kt)
+- [Manager installation flow](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Install.kt)
+- [`boot-patch` and restore implementation](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_patch.cpp)
+- [`boot-patch-v2` ImgPatch implementation](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_patch_v2.cpp)
+- [Remote-image extraction](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/core/tasks/ExtractImage.kt)

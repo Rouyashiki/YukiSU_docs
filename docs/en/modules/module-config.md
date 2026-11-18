@@ -55,7 +55,7 @@ ksud module config get settings
 - `get` adds a newline after the value. Shell `$(...)` removes trailing newlines and cannot retrieve multiline text byte for byte.
 - `list` is text for inspection, and values may span lines. Do not `source` or `eval` its output.
 
-Files are stored at `/data/adb/ksu/module_configs/<directory-id>/persist.config` and `tmp.config`. v1.8.0 uses a binary format with explicit lengths. Do not edit these files with a text editor or `sed`. Older `key=value` files written by the C++ implementation remain readable and migrate on the next save. Use the commands, check their exit status, and show save failures to the user.
+Files are stored at `/data/adb/ksu/module_configs/<directory-id>/persist.config` and `tmp.config`. The files use a binary format with explicit lengths. Do not edit these files with a text editor or `sed`. Older `key=value` files written by the C++ implementation remain readable and migrate on the next save. Use the commands, check their exit status, and show save failures to the user.
 
 ## Managing a YukiSU feature
 
@@ -104,4 +104,4 @@ ksud feature get sulog --config
 
 To release ownership, delete or turn off the relevant `manage.*` entry. Clear a temporary override first if present. Disabling or uninstalling the module also removes its ownership from subsequent checks. These actions do not undo an already applied kernel value: follow the module's recovery steps, then reboot and check the feature state.
 
-Sources: [configuration implementation](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module_config.cpp), [CLI arguments](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/cli_args.cpp), [managed features](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp), [module scan](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module.cpp), [installation checks](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/assets/installer.sh).
+Sources: [configuration implementation](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module_config.cpp), [CLI arguments](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/cli_args.cpp), [managed features](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/core/feature.cpp), [module scan](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module.cpp), [installation checks](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/assets/installer.sh).

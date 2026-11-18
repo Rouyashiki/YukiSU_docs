@@ -85,4 +85,4 @@ preinit 发生在普通模块安全模式处理之前。遇到 preinit 启动故
 
 `initrc/*.rc` 会被收集合并为 `modules.rc`，由 Android init 在其 rc 解析阶段处理；`preinit/preinit.conf` 则由早期 runner 解释。`--no-custom-rc` 与 `--no-preinit` 是不同的启动配置，禁用其中一种不等于禁用另一种。
 
-源码依据：[快照、预算与状态](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/preinit.cpp)、[早期 runner](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/preinit/runner/runner.c)、[内核入口](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/preinit/preinit.c)。
+源码依据：[快照、预算与状态](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/preinit.cpp)、[早期 runner](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/preinit/runner/runner.c)、[内核入口](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/preinit/preinit.c)。

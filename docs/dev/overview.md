@@ -5,7 +5,7 @@ title: 开发者
 
 # 开发者
 
-本章以 **YukiSU v1.8.0** 为基线。源码在 [Rouyashiki/YukiSU](https://github.com/Rouyashiki/YukiSU)。按下面的目录定位组件，再选择对应的构建入口。
+下面的目录和构建入口对应 [YukiSU v1.9.0 源码](https://github.com/Rouyashiki/YukiSU/tree/a66faee724c6ff2d79757cb1cc8030fdf71a30f8)。
 
 | 目录 | 主要内容 |
 | --- | --- |
@@ -40,13 +40,13 @@ ksud boot-patch --help
 
 各命令的帮助形式不同；不要为了查看帮助直接运行会修改系统的命令。
 
-启动镜像参数见[启动镜像命令](/dev/boot-images/)；Ramdisk 二进制协议见 [YRCP v3](/dev/ramdisk-protocol/)。其他命令参考当前构建的帮助输出和 [`userspace/ksud/src/cli.cpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/cli.cpp)。第三方工具应固定 YukiSU 提交或发布版本，检查命令退出码，并优先使用命令提供的 JSON 输出。
+启动镜像参数见[启动镜像命令](/dev/boot-images/)；Ramdisk 二进制协议见 [YRCP v3](/dev/ramdisk-protocol/)。其他命令参考当前构建的帮助输出和 [`userspace/ksud/src/cli.cpp`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/cli.cpp)。第三方工具应固定 YukiSU 提交或发布版本，检查命令退出码，并优先使用命令提供的 JSON 输出。
 
 升级依赖版本时，重新检查所用 UAPI、命令参数和返回字段；构建与设备测试步骤见[构建指南](/dev/build/)。
 
 ## Feature 与默认 Root 环境
 
-v1.8.0 定义 13 项 Feature，旧 ID `5` 和 `100` 已移除并保留编号。WebView 挂载卸载改由应用配置控制，不能再写入旧的 `webview_zygote_umount` 或 `enhanced_security` 开关。
+v1.9.0 定义 13 项 Feature，旧 ID `5` 和 `100` 已移除并保留编号。WebView 挂载卸载改由应用配置控制，不能再写入旧的 `webview_zygote_umount` 或 `enhanced_security` 开关。
 
 下面两个查询分别读取当前内核值与持久配置：
 
@@ -72,7 +72,7 @@ ksud late-load --kmi android14-6.1
 
 查询软重启能力与最近结果使用 `ksud soft-reboot-status --json`。`ksud soft-reboot` 重启 Android 并重放对应模块阶段；它不重新加载内核，也不执行 preinit。
 
-- [CLI 参数表](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/cli_args.cpp)
-- [临时加载](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/late_load.cpp)
-- [受保护的卸载流程](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/unload.cpp)
-- [Feature 配置与迁移](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp)
+- [CLI 参数表](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/cli_args.cpp)
+- [临时加载](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/late_load.cpp)
+- [受保护的卸载流程](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/unload.cpp)
+- [Feature 配置与迁移](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/core/feature.cpp)

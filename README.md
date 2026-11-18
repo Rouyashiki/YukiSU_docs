@@ -1,12 +1,14 @@
 # YukiSU Documentation
 
+Read the guides in [English](https://yukisu.rouyashiki.org/en/) or [简体中文](https://yukisu.rouyashiki.org/).
+
 The site is generated with [VuePress](https://vuepress.vuejs.org/) and [vuepress-theme-plume](https://github.com/pengzhanbo/vuepress-theme-plume).
 
 Product and compatibility claims must be supported by [YukiSU source](https://github.com/Rouyashiki/YukiSU) at the documented version. Avoid copying behavior from another KernelSU fork without verifying it in YukiSU.
 
 ## Documented baseline
 
-This site targets [YukiSU v1.8.0](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.8.0), released on 2026-11-02, at source commit [`9d046af4`](https://github.com/Rouyashiki/YukiSU/tree/9d046af49e2a43120a05a06d7c9dbc76ca824d76), with Manager version code 10670. See the [Update guide](docs/en/guide/update.md) for upgrade steps and configuration migration. Label later development changes by version; do not present them as v1.8.0 behavior.
+These guides cover [YukiSU v1.9.0](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.9.0), released November 16, 2026, with Manager version code 10745. Use the [release commit](https://github.com/Rouyashiki/YukiSU/tree/a66faee724c6ff2d79757cb1cc8030fdf71a30f8) when checking a feature. The [update guide](docs/en/guide/update.md) explains how to switch from the old Manager and which data to keep before removing it.
 
 ## Content workflow
 
@@ -49,7 +51,7 @@ pnpm install --frozen-lockfile --prod=false
 pnpm docs:build
 ```
 
-Publish every file inside `docs/.vuepress/dist/` as a static site at `https://yukisu.anatdx.com/`. The current `base` is `/`, not a subdirectory. If the domain changes, update `hostname` in `docs/.vuepress/config.ts` and rebuild so canonical URLs, the sitemap, and robots.txt agree.
+Publish the contents of `docs/.vuepress/dist/` at the root of [yukisu.rouyashiki.org](https://yukisu.rouyashiki.org/). The `hostname` in `docs/.vuepress/config.ts` supplies the domain for canonical URLs, the sitemap, and robots.txt. Rebuild after changing it.
 
 Replace the previous build as a whole to remove deleted pages and obsolete search assets. Preserve the directory structure so paths such as `/en/guide/intro/` serve their `index.html`. Missing paths should return `404.html` with HTTP 404.
 

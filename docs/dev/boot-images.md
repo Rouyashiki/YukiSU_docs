@@ -5,7 +5,7 @@ title: 启动镜像命令
 
 # 启动镜像命令
 
-YukiSU v1.8.0 提供两套镜像后端：传统 Ramdisk `boot-patch` 与内核直嵌 `boot-patch-v2`。按安装方式选择命令；两者的输入、备份和目标分区见下文。
+YukiSU 提供两套镜像后端：传统 Ramdisk `boot-patch` 与内核直嵌 `boot-patch-v2`。按安装方式选择命令；两者的输入、备份和目标分区见下文。
 
 ::: danger `--flash` / `-f` 会写分区
 下面的文件示例只生成镜像。设备分区模式中的 `--flash` / `-f` 会直接写分区；`--ota` 本身只选择未活动槽位。刷写前，用下面的 `boot-info` 命令确认目标 KMI、槽位与分区。
@@ -169,9 +169,9 @@ ksud boot-restore --help
 
 ## 源码入口
 
-- [`boot-patch`、`boot-restore` 与 `boot-info`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch.cpp)
-- [`boot-patch-v2`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch_v2.cpp)
-- [ImgPatch LKM 配置 ABI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/imgpatch_config.h)
-- [Manager 命令拼装与 KMI 解析](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/KsuCli.kt)
-- [启动参数校验](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_config.hpp)
-- [备份与镜像绑定](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_backup.cpp)
+- [`boot-patch`、`boot-restore` 与 `boot-info`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_patch.cpp)
+- [`boot-patch-v2`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_patch_v2.cpp)
+- [ImgPatch LKM 配置 ABI](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/imgpatch_config.h)
+- [Manager 命令拼装与 KMI 解析](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/KsuCli.kt)
+- [启动参数校验](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_config.hpp)
+- [备份与镜像绑定](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_backup.cpp)

@@ -5,7 +5,7 @@ title: Kasumi and mount configuration
 
 # Kasumi and mount configuration
 
-YukiSU v1.8.0 integrates Kasumi API 18 and the userspace Kagami controller. The Kasumi button at the top right of Home opens Status, Settings, Rules, and Logs tabs. Module cards also provide per-module mount configuration.
+YukiSU v1.9.0 uses **Kasumi API 19**. Tap Kasumi at the top right of Home to check the running version, change settings, manage rules, or read logs. To change how one module is mounted, open its module card.
 
 ## Three separate controls
 
@@ -23,9 +23,9 @@ Refresh status after saving configuration. “Saved, but kernel apply failed” 
 
 Check kernel availability, protocol compatibility, and version first. Status also shows storage/mount information, actual module strategies, and active views. After changing a module mode, fully reboot and read its actual strategy on Status.
 
-Installing the v1.8.0 APK does not replace an old LKM or running controller. If interfaces are incompatible, sync the matching `ksud`, install a compatible LKM, and fully reboot.
+API 19 checks the protocol version before applying changes. If Status reports a mismatch, check the installed `ksud` and the running LKM. Update both to v1.9.0 and reboot fully before trying again. [Upgrade steps](/en/guide/update/)
 
-API 18 adds a global scope for individual rules; the manager allows it only when the kernel reports `rule_bypass`. Soft reboot separately checks capabilities such as `safe_rule_retire`. Do not use the API version alone to decide support; see [Soft reboot](/en/manager/soft-reboot/).
+Kasumi prepares a batch of rule changes before committing them together. If that batch fails, the previous rules stay active. Soft reboot has additional recovery requirements. See [Soft reboot](/en/manager/soft-reboot/).
 
 ## Mount strategies and module rules
 
@@ -37,7 +37,7 @@ Settings control whether OverlayFS and Magic Mount may participate in planning, 
 
 ## Kernel views and hiding rules
 
-Available controls depend on capabilities reported by the running kernel, including mount hiding, maps mapping, OverlayFS xattr hiding, statfs views, and SELinux Guard. v1.8.0 removes aggressive mount hiding; do not continue configuring that mode from older instructions.
+Available controls depend on capabilities reported by the running kernel, including mount hiding, maps mapping, OverlayFS xattr hiding, statfs views, and SELinux Guard. Aggressive mount hiding was removed in v1.8.0; do not continue configuring that mode from older instructions.
 
 **SELinux Guard** is disabled by default. It experimentally applies bounded timing compensation to SELinux context writes. It neither changes Enforcing/Permissive nor replaces App Profile domains and SELinux rules. Enable it when investigating that class of compatibility problem and compare target-app behavior.
 
@@ -65,7 +65,7 @@ Choose one implementation: disable the conflicting module's load source or disab
 
 ## Reboot and diagnosis
 
-v1.8.0 permits Kasumi soft reboot when capabilities and restoration requirements are satisfied. Kasumi activation alone no longer blocks it. Follow the daemon support state shown in Manager and the specific remedies in [Soft reboot](/en/manager/soft-reboot/). After disabling Feature 106, a full reboot is still needed to end its current kernel lifecycle. A full reboot also ends temporary late-load root.
+You can use soft reboot with Kasumi when the running kernel and controller support recovery. Follow the daemon support state shown in Manager and the specific remedies in [Soft reboot](/en/manager/soft-reboot/). After disabling Feature 106, a full reboot is still needed to end its current kernel lifecycle. A full reboot also ends temporary late-load root.
 
 Include the following in an issue report:
 
@@ -78,6 +78,6 @@ The Kasumi Logs tab supports refresh and clear. Preserve relevant output before 
 
 ## Source references
 
-[Kasumi UI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/KasumiConfig.kt), [settings and capabilities](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/KasumiSettings.kt), [controller](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/util/KasumiManager.kt), [kernel lifecycle](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/kasumi/core/kasumi_bootstrap.c), and [soft-reboot restrictions](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/init_event.cpp).
+[Kasumi UI](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/kasumi/KasumiConfig.kt), [settings and capabilities](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/kasumi/KasumiSettings.kt), [controller](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/kasumi/util/KasumiManager.kt), [kernel lifecycle](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/kasumi/core/kasumi_bootstrap.c), and [soft-reboot restrictions](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/init_event.cpp).
 
-[kasumi.h](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/kasumi.h), [KasumiMountConfigDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/KasumiMountConfigDialog.kt), [sucompat_module_guard.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/feature/sucompat_module_guard.c), [kasumi_config_guard.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/kasumi/core/kasumi_config_guard.c), [KasumiConflictDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/component/KasumiConflictDialog.kt).
+[kasumi.h](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/kasumi.h), [KasumiMountConfigDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/kasumi/KasumiMountConfigDialog.kt), [sucompat_module_guard.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/feature/sucompat_module_guard.c), [kasumi_config_guard.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/kasumi/core/kasumi_config_guard.c), [KasumiConflictDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/component/KasumiConflictDialog.kt).

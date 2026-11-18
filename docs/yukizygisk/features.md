@@ -27,7 +27,7 @@ YukiZygisk 当前有两条明确分开的模块链：
 | 拒绝名单 / `denylist_mode` | `0` | `0` 关闭、`1` 强制、`2` 恢复 |
 | 镜像日志 / `dmesg_log` | `false` | 将 daemon 日志同时写到 dmesg |
 
-普通 Zygisk 模块带 `PT_TLS` 时直接使用系统 linker；其他库在自带加载器失败后会尝试系统路径。v1.8.0 的 Native ZN 模块固定通过 Bionic 加载，保留系统管理的库句柄、依赖和映射，不受这两个模块加载设置切换。core 使用独立的匿名引导路径。
+v1.9.0 集成了 YukiLinker SDK。上面的加载器开关适用于普通 Zygisk 模块。Native ZN 模块使用 SDK 的系统加载模式，由 Android 自带的 Bionic 加载并管理依赖。
 
 设置保存在 `/data/adb/ksu/yukizygisk/yzconfig.json`，通过 `yzctl reload` 通知 daemon 并刷新 early 快照。已运行进程不会卸载重载；早加载设置只影响下次启动快照。配置写盘后，运行时已连接就执行 reload；尚未建立运行时通道时，保存配置并更新快照，待 YukiZygisk 启动后读取。reload 失败也会继续尝试刷新 early 快照，返回失败不代表配置回滚。先用 `ksud yzctl config get` 查看保存值，再检查运行状态和错误。
 
@@ -84,6 +84,7 @@ YukiZygisk 包含 ARM64 与 ARM32 runtime/daemon。32 位 daemon 只在设备有
 | Zygote `injected` | 已收到该 PID/代际的 core 注入完成报告 | 启动目标应用，检查模块状态和功能 |
 | Zygote `unknown` | 已检测/重定向，但尚未收到完成或失败结果 | 刷新状态；持续无结果时检查对应 ABI 的 daemon/core 日志，记录 PID 后导出报告 |
 | Zygote `failed` | 当前代际注入失败 | 查看同一 PID/代际的 loader/core 日志 |
+| 部分注入失败（也有成功记录） | 同一轮 Zygote 运行中既有成功也有失败 | 打开模块详情，对照出问题的应用和时间查看日志 |
 | 普通模块数量 | 活动目录中含有相应 ABI 的 `zygisk/*.so` | 打开模块状态，查看加载报告 |
 | 普通模块 `injected` | 当前受监视 Zygote 的 PID/代际已有该模块注册/加载成功报告 | 测试目标应用中的 pre/post 回调和模块功能 |
 | Native `unknown` | 清单已登记，但尚未收到目标的模块结果 | 正常启动目标后刷新；开机服务需要重启设备。仍无结果时检查清单、ABI 和日志 |
@@ -92,7 +93,7 @@ YukiZygisk 包含 ARM64 与 ARM32 runtime/daemon。32 位 daemon 只在设备有
 
 Native 汇总键是“模块目录 ID + 目标类型 + 目标值”。一个成功目标随后正常退出时，汇总仍保留 `injected`；配置存在但从未观察到目标时保持 `unknown`。按进程视图会保留原始 PID/进程数据进行分组，但界面名称只显示路径 basename。
 
-汇总时，明确的 `crashed` / `failed` 优先于成功；存在成功且其余范围尚未观察到时仍为 `injected`；全部未观察到才是 `unknown`。进程退出单独显示为 `exited`，保留已有的注入结果。
+普通 Zygisk 模块会分别保留成功和失败记录，一次失败不会盖掉之前的成功。Native 目标按自己的状态汇总，优先显示崩溃或失败。进程正常退出会单独标为 `exited`。
 
 状态页的“注入次数”只统计有正向 `injected` 基础记录的 Zygote/Native 目标代际，不是所有 exec，也不是模块回调总次数。
 
@@ -129,8 +130,8 @@ YukiSU 会保留 `diagnostics/current` 与上一代 `diagnostics/old`，并记�
 
 ## 源码参考
 
-- [配置默认值](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/settings.hpp)
-- [状态与 CLI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yzctl.cpp)
-- [daemon 恢复](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yukizygisk_daemon.cpp)
-- [崩溃关联](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/daemon/crash_monitor.cpp)
-- [状态页](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/yukizygisk/YukiZygiskScreen.kt)
+- [配置默认值](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/settings.hpp)
+- [状态与 CLI](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/yzctl.cpp)
+- [daemon 恢复](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/yukizygisk_daemon.cpp)
+- [崩溃关联](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/daemon/crash_monitor.cpp)
+- [状态页](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/yukizygisk/YukiZygiskScreen.kt)

@@ -27,7 +27,7 @@ The status page separates the loader, mapping strategy, early loading and protec
 | Denylist / `denylist_mode` | `0` | `0` off, `1` force, `2` restore |
 | Log mirroring / `dmesg_log` | `false` | Mirror daemon logs to dmesg |
 
-Ordinary Zygisk modules with `PT_TLS` use the system linker directly; other libraries try the system path if the bundled loader fails. In v1.8.0, Native ZN modules always load through Bionic and retain system-managed handles, dependencies and mappings. These two module-loading settings do not switch Native modules to another loader. The core uses a separate anonymous bootstrap path.
+YukiSU v1.9.0 includes the YukiLinker SDK. The loader toggle above applies to ordinary Zygisk modules. Native ZN modules use the SDK’s system mode and rely on Android’s Bionic loader for their dependencies.
 
 Settings are stored in `/data/adb/ksu/yukizygisk/yzconfig.json`. `yzctl reload` notifies daemons and refreshes the early snapshot. Existing processes do not unload and reload; early loading affects the next-boot snapshot. After saving, a connected runtime receives reload. If no runtime channel exists yet, the command saves configuration and updates the snapshot for the next YukiZygisk start. A failed reload still attempts an early-snapshot refresh; failure does not roll back saved settings. Run `ksud yzctl config get`, then inspect runtime state and errors.
 
@@ -84,6 +84,7 @@ The manager polls `yzctl status --json` about every two seconds. Use the display
 | Zygote `injected` | Core injection completed for this PID/generation | Start the target app and check module state and functionality |
 | Zygote `unknown` | Detection/redirection occurred, but no completion or failure arrived | Refresh status. If no result arrives, inspect daemon/core logs for that ABI, record the PID and export diagnostics |
 | Zygote `failed` | Injection failed for this generation | Inspect loader/core logs for the same PID/generation |
+| Some injections failed, others succeeded | The same Zygote generation recorded both outcomes | Open the module details and check the logs for the app and time of the failure |
 | Ordinary module count | Active directories contain `zygisk/*.so` for the corresponding ABI | Open module status to inspect load reports |
 | Ordinary module `injected` | The current monitored Zygote PID/generation has a successful module registration/load report | Test pre/post callbacks and module functionality in the target app |
 | Native `unknown` | The manifest is registered, but no module result has arrived for the target | Start the target normally and refresh; reboot for a boot-time service. If no result arrives, check its manifest, ABI and logs |
@@ -92,7 +93,7 @@ The manager polls `yzctl status --json` about every two seconds. Use the display
 
 Native aggregation is keyed by module directory ID + target type + target value. A successful target that later exits normally remains `injected` in the aggregate. A configured target never observed stays `unknown`. Process view retains raw PID/process values for grouping while the displayed process name uses the path basename.
 
-Aggregation prioritizes explicit `crashed` / `failed` over success. Success plus unobserved scopes remains `injected`; only entirely unobserved scopes are `unknown`. Process exit is shown separately as `exited`, preserving the recorded injection result.
+For ordinary Zygisk modules, the status page keeps both successful and failed loads from the same Zygote generation. Native targets have their own summary, which gives crashes and failures priority. A normal process exit is shown separately as `exited`.
 
 The page's injection count includes only Zygote/Native target generations with a positive base `injected` record. It is neither every exec nor the number of module callbacks.
 
@@ -129,8 +130,8 @@ Continue with [ordinary Zygisk modules](/en/yukizygisk/modules/) or the [Native 
 
 ## Source references
 
-- [Configuration defaults](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/settings.hpp)
-- [Status and CLI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yzctl.cpp)
-- [Daemon recovery](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/yukizygisk_daemon.cpp)
-- [Crash correlation](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/zygisk/daemon/crash_monitor.cpp)
-- [Status screen](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/yukizygisk/YukiZygiskScreen.kt)
+- [Configuration defaults](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/settings.hpp)
+- [Status and CLI](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/yzctl.cpp)
+- [Daemon recovery](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/yukizygisk_daemon.cpp)
+- [Crash correlation](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/zygisk/daemon/crash_monitor.cpp)
+- [Status screen](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/yukizygisk/YukiZygiskScreen.kt)

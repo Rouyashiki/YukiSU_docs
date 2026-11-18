@@ -39,7 +39,7 @@ Kernel Umount、App Profile 的“卸载模块”、WebView 卸载和挂载视�
 
 ## 升级后的默认值与模块接管
 
-升级到 v1.8.0 后，`ksud` 会执行一次默认值迁移，将 Feature 102 开启并持久化，包括旧配置中保存为关闭的情况。迁移完成后，你再次手动关闭的值会保留。旧自定义 Root Profile 的防逃逸标志与 SELinux domain 不会被全局默认值覆盖；需要调整时逐项编辑对应 Profile。
+从 v1.8.0 以前的版本升级时，`ksud` 会执行一次默认值迁移，将 Feature 102 开启并持久化，包括旧配置中保存为关闭的情况。迁移完成后，你再次手动关闭的值会保留。旧自定义 Root Profile 的防逃逸标志与 SELinux domain 不会被全局默认值覆盖；需要调整时逐项编辑对应 Profile。
 
 显示“由模块管理”的功能不能直接从管理器或普通 `ksud feature set/set-save` 修改。到接管模块的配置中修改，或停用该模块、重启后再使用功能控制页。su 兼容的 0、101、105 是关联组：模块接管其中一项时，整个模式组由它控制；关闭 Kasumi 所需的关联转换也受此限制。启动强制值仍优先于模块接管。
 
@@ -65,6 +65,8 @@ Kernel Umount、App Profile 的“卸载模块”、WebView 卸载和挂载视�
 
 自定义 su 路径默认是 `/system/bin/su`，仅在 Kasumi 模式下可编辑。必须是有效绝对路径，父目录已经存在，不能覆盖现有文件。更改后同步更新工具中的 su 路径；只搜索原路径的工具将找不到新入口。
 
+启用 Magisk su 兼容模式时，如果“默认卸载模块”也开着，管理器会提醒你，使用默认配置的应用可能看不到 Root 授权弹窗。遇到这种情况，可以只在该应用的 App Profile 里关闭“卸载模块”，然后重新打开应用申请授权。
+
 ## Shell 授权的三个独立概念
 
 - **总是给 shell Root：** 安装时的 shell 授权策略。
@@ -83,6 +85,6 @@ SELinux 隐藏处理策略查询，Kasumi 处理配置的文件与挂载视图�
 
 ## 源码
 
-[Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/feature.h)、[FeatureControlScreen.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/feature/FeatureControlScreen.kt)、[SuCompatMode.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/ui/screen/feature/SuCompatMode.kt)、[shell_su_adb_only.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/feature/shell_su_adb_only.c)。
+[Feature UAPI](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/feature.h)、[FeatureControlScreen.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/feature/FeatureControlScreen.kt)、[SuCompatMode.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/feature/SuCompatMode.kt)、[shell_su_adb_only.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/feature/shell_su_adb_only.c)。
 
-[Feature persistence and ownership](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/core/feature.cpp).
+[Feature persistence and ownership](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/core/feature.cpp).

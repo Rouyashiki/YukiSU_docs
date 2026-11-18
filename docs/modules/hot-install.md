@@ -57,4 +57,4 @@ fi
 
 旧目录保留在 `/data/adb/ksu/hot_install_trash/` 的本次启动分组中，供仍在使用旧内容的进程继续访问；后续启动自动清理旧分组。保留这些目录至重启，管理器不提供通过它们回滚版本的入口。
 
-源码依据：[安装器变量](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/assets/installer.sh)、[热安装实现](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/hot_install.cpp)、[脚本执行与安装收尾](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module.cpp)。
+源码依据：[安装器变量](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/assets/installer.sh)、[热安装实现](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/hot_install.cpp)、[脚本执行与安装收尾](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module.cpp)。

@@ -20,9 +20,9 @@ Device requirements:
 
 Android 11 and older, GKI 1.0, non-GKI, ARM32, x86_64 and built-in `CONFIG_KSU=y` are outside YukiSU's supported scope. Use another root solution on these devices; do not force-load a YukiSU LKM.
 
-## KMIs included in v1.8.0
+## KMIs included in v1.9.0
 
-The [v1.8.0 release](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.8.0) provides LKMs named `<KMI>_kernelsu.ko` for these eight targets. Full repository builds use the same set:
+The [v1.9.0 release](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.9.0) provides LKMs named `<KMI>_kernelsu.ko` for these eight targets. Full repository builds use the same set:
 
 | KMI target | GKI generation |
 | --- | --- |
@@ -66,7 +66,7 @@ See [Installation and image modes](/en/guide/install-modes/), [Build guide](/en/
 
 ## Source code
 
-- [Local/CI KMI matrix](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/.github/workflows/build-lkm.yml)
-- [Windows full-build script](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/scripts/build.ps1)
-- [Linux/macOS full-build script](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/scripts/build.sh)
-- [Compile-time API 31 userspace floor](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/common/api_floor.hpp)
+- [Local/CI KMI matrix](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/.github/workflows/build-lkm.yml)
+- [Windows full-build script](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/scripts/build.ps1)
+- [Linux/macOS full-build script](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/scripts/build.sh)
+- [Compile-time API 31 userspace floor](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/common/api_floor.hpp)

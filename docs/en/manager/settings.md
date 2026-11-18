@@ -28,13 +28,13 @@ Online App Profile templates come from the KernelSU template service and are rea
 
 - “Check for updates” controls stable-release checks when the app opens.
 - “Check for CI updates” appears only while update checks are enabled. It is off by default and covers signed nightly Manager builds.
-- An APK update does not flash the LKM or boot image. Sync device-side `ksud` manually, or enable automatic updates below.
+- Update the LKM through the install page. The setting below controls how the Manager updates the device-side `ksud`.
 
-Obtain stable builds from [YukiSU Releases](https://github.com/Rouyashiki/YukiSU/releases). See [Update YukiSU](/en/guide/update/) for component update steps.
+Get stable builds from [GitHub Releases](https://github.com/Rouyashiki/YukiSU/releases). The new Manager uses the [CI update site](https://yukisuupdates.rouyashiki.org/) for development builds. If you still use the old package, follow the [upgrade guide](/en/guide/update/) to install v1.9.0 manually.
 
 ### Automatic `ksud` update
 
-This is off by default. When enabled, on a cold start, once the kernel recognizes the app as manager, it compares the actual APK-bundled `libksud.so` with `/data/adb/ksud`. On mismatch it atomically installs the bundled version through the manager's JNI/driver root channel and repairs tool links under `/data/adb/ksu/bin`.
+This is on by default. If you turned it off in this app, the Manager keeps your choice. On a cold start, if the kernel already recognizes the Manager, it compares the bundled `libksud.so` with `/data/adb/ksud`. If they differ, it installs the bundled copy and repairs the tool links in `/data/adb/ksu/bin`. If authentication finishes later, you can sync manually.
 
 With automatic sync off, tap the `ksud daemon` row on Home to inspect and sync manually.
 
@@ -62,7 +62,7 @@ It is not persistent installation and does not make SELinux Permissive. See [Jai
 
 Disabled by default, this chooses soft reboot for completion buttons after module installation, update, enable, disable, or removal. Late-load mode prefers it when supported so the currently loaded LKM remains active.
 
-v1.8.0 queries device-side daemon support, including Kasumi soft reboot when requirements are met. It waits for old Android services to exit, rebuilds mounts, restores hide rules, and starts Android. “Request accepted” means background work started. Return to Manager for the final completed, pending-rule, or failed state.
+The Manager checks with the installed daemon, including Kasumi soft reboot when requirements are met. It waits for old Android services to exit, rebuilds mounts, restores hide rules, and starts Android. “Request accepted” means background work started. Return to Manager for the final completed, pending-rule, or failed state.
 
 A new LKM, boot image, ImgPatch configuration, or early-boot UTS template still requires a full reboot. See [Soft reboot](/en/manager/soft-reboot/) for requirements, logs, and recovery. Android “Userspace reboot” in the power menu is a separate platform operation.
 
@@ -109,7 +109,7 @@ These are distinct from dynamic-manager compatibility settings, which control ve
 
 ### Manager-display only
 
-v1.8.0 consistently uses Material 3 Expressive and removes the Classic/Expressive selector. Language, light/dark theme, dynamic color, theme palette, app DPI, custom background, card opacity/dimming, and card visibility affect Manager presentation only.
+The Manager uses Material 3 Expressive. Language, light/dark theme, dynamic color, theme palette, app DPI, custom background, card opacity/dimming, and card visibility affect Manager presentation only.
 
 Motion intensity offers Off, Soft, and Q Bouncy, with Q Bouncy as default. Page transitions offer Reveal and classic spring Slide, with Reveal as default. Changes apply to subsequent UI interactions without a device reboot.
 
@@ -140,6 +140,6 @@ When using a custom-built `ksud`, install the APK from that same build. Files fr
 
 ## Source references
 
-[Settings.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Settings.kt), [SoftReboot.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/SoftReboot.kt), [Module.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Module.kt).
+[Settings.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Settings.kt), [SoftReboot.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/SoftReboot.kt), [Module.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Module.kt).
 
-[Theme.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/theme/Theme.kt), [YukiMotion.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/motion/YukiMotion.kt).
+[Theme.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/theme/Theme.kt), [YukiMotion.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/motion/YukiMotion.kt).

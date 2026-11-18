@@ -2,6 +2,8 @@ import { viteBundler } from '@vuepress/bundler-vite'
 import { defineUserConfig } from 'vuepress'
 import { plumeTheme } from 'vuepress-theme-plume'
 
+const hostname = 'https://yukisu.rouyashiki.org'
+
 export default defineUserConfig({
   base: '/',
   lang: 'zh-CN',
@@ -39,7 +41,7 @@ export default defineUserConfig({
   ],
 
   theme: plumeTheme({
-    hostname: 'https://yukisu.anatdx.com',
+    hostname,
 
     docsRepo: 'Rouyashiki/YukiSU_docs',
     docsDir: 'docs',
@@ -53,6 +55,7 @@ export default defineUserConfig({
 
     plugins: {
       git: false,
+      seo: { canonical: hostname },
     },
 
     cache: 'filesystem',

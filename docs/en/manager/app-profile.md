@@ -7,7 +7,9 @@ title: App Profile
 
 The Superuser switch grants root to an Android UID. App Profile sets the UID/GID, capabilities, SELinux domain, and mount namespace used after approval, plus the module-unmount policy for apps without root.
 
-The complete kernel ABI is [`uapi/app_profile.h`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/app_profile.h). Its current version is `KSU_APP_PROFILE_VER 4`; do not write configuration using an old tutorial's structure size or field order.
+The complete kernel ABI is [`uapi/app_profile.h`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/app_profile.h). Its current version is `KSU_APP_PROFILE_VER 4`; do not write configuration using an old tutorial's structure size or field order.
+
+To grant root to an app you just installed, look in **Recently installed or updated** on the Superuser page. It includes apps installed or updated in the past hour.
 
 ## Policy applies to a UID
 
@@ -29,7 +31,7 @@ If user enumeration fails, the app list falls back to user 0 only. Grants for ot
 
 ### Default
 
-The kernel default uses UID/GID 0, default groups, full capabilities, the YukiSU `ksu` SELinux domain (`u:r:ksu:s0`), and the caller's inherited mount namespace. Global Default anti-escape (no-new-privs) is enabled by default in v1.8.0, and default profiles inherit it. Upgrade migration enables this global default; existing custom profile domains and anti-escape flags retain their saved values.
+The kernel default uses UID/GID 0, default groups, full capabilities, the YukiSU `ksu` SELinux domain (`u:r:ksu:s0`), and the caller's inherited mount namespace. Global Default anti-escape (no-new-privs) is enabled by default, and default profiles inherit it. Upgrade migration enables this global default; existing custom profile domains and anti-escape flags retain their saved values.
 
 Use Default for general root tools. Choose Custom when you need to restrict identity or permissions, and retain the groups and capabilities the tool needs.
 
@@ -94,7 +96,7 @@ Profiles enter their relevant paths when an app process starts/specializes or re
 
 ## WebView Zygote
 
-v1.8.0 replaces Feature 5 with a **WebView Zygote** entry (UID 1053) in Superuser. Open its App Profile and select the default non-root policy, or use a custom policy to enable/disable module unmount. This entry remains visible when system apps are hidden and cannot receive root or dynamic-manager identity.
+Since v1.8.0, the setting formerly controlled by Feature 5 has its own **WebView Zygote** entry (UID 1053) in Superuser. Open its App Profile and select the default non-root policy, or use a custom policy to enable/disable module unmount. This entry remains visible when system apps are hidden and cannot receive root or dynamic-manager identity.
 
 It uses the same unmount logic as other non-root profiles and requires global Kernel Umount. Default mode follows “Unmount modules by default.” Old Feature 5 settings no longer apply; select the required policy here after upgrading. Fully reboot after saving so WebView Zygote and subsequent WebView processes use it.
 
@@ -151,8 +153,8 @@ Test the tool's actual network, storage, Binder, and module-file operations. Mis
 
 ## Source references
 
-[AppProfile.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/AppProfile.kt), [DynamicManagerCompatDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/component/DynamicManagerCompatDialog.kt), [KsuCli.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/KsuCli.kt).
+[AppProfile.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/AppProfile.kt), [DynamicManagerCompatDialog.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/component/DynamicManagerCompatDialog.kt), [KsuCli.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/KsuCli.kt).
 
-[allowlist.c](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/policy/allowlist.c), [selinux.h](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/kernel/selinux/selinux.h), [KsuService.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/KsuService.kt), [AllowlistPlan.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/module/AllowlistPlan.kt), [AllowlistRestore.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/module/AllowlistRestore.kt).
+[allowlist.c](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/policy/allowlist.c), [selinux.h](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/kernel/selinux/selinux.h), [KsuService.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/KsuService.kt), [AllowlistPlan.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/module/AllowlistPlan.kt), [AllowlistRestore.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/module/AllowlistRestore.kt).
 
-[SuperUserViewModel.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/viewmodel/SuperUserViewModel.kt), [AllowlistBackup.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/module/AllowlistBackup.kt).
+[SuperUserViewModel.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/viewmodel/SuperUserViewModel.kt), [AllowlistBackup.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/module/AllowlistBackup.kt).

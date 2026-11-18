@@ -21,6 +21,8 @@ Record the last working state, the change before failure, and the Manager, runni
 
 ## Root, Manager, and shell
 
+If the new app opens after an upgrade but has no Manager access, check that its package is `org.rouyashiki.yukisu` and check the running LKM. If the old LKM is still active, follow the [upgrade guide](/en/guide/update/) to install the matching one and reboot fully. The new `ksud` sends root prompts to the new package.
+
 Installing the APK does not load an LKM. Verify [Android/KMI support](/en/guide/compatibility/), runtime mode, and authentication. Signature rejection, an incorrect SuperKey, and an unloaded LKM are different failures.
 
 For apps, check authorization and App Profile identity, capabilities, SELinux domain, namespace, and YukiSU no-new-privs. Revocation does not demote existing root processes; restart them before checking.
@@ -31,13 +33,13 @@ If an authorized shell is denied, inspect feature 6. It requires a trusted `adbd
 
 Manager compares its bundled ELF with `/data/adb/ksud`. It does not execute an untrusted mismatching file to obtain its version, so the installed version may intentionally display as unknown.
 
-Keep the bundled version, original display, and warning time. After verifying the APK source, use synchronization in Home's details. Cold-start auto-sync is off by default. Synchronization does not update the LKM or boot image.
+Note the time of the warning and the version on Home. Once you have checked the APK’s source, tap `ksud daemon` to sync. Cold-start sync is on by default and runs if the kernel already recognizes the Manager. If authentication finished later, sync manually. Update the boot image separately for a new LKM.
 
 If replacement recurs, investigate other managers, installers, or startup scripts instead of repeatedly overwriting the evidence. See [Settings](/en/manager/settings/).
 
 ## Unsupported, rolled-back, or forced features
 
-- Check the ID first: v1.8.0 retires IDs 5 and 100, so upgrading will not restore those controls. For other features, update the matching `ksud` and a compatible LKM that supports them, then reboot fully.
+- Check the ID first: IDs 5 and 100 were retired in v1.8.0, so upgrading will not restore those controls. For other features, update the matching `ksud` and a compatible LKM that supports them, then reboot fully.
 - Preserve errors from saving or follow-up ADB/Magisk operations and check rollback of runtime and saved values.
 - Forced state comes from boot configuration. Change the relevant image and reboot fully.
 - Disabled/Traditional/KSM su entries are coupled. Unavailable or disabled Kasumi limits dependent su features.
@@ -63,11 +65,11 @@ First confirm the module has `system/` content and no `skip_mount`, then identif
 3. Kagami `auto` selects OverlayFS when eligible, otherwise enabled Magic Mount; execution failure does not retry another backend. Kasumi requires explicit selection and kernel support.
 4. If global paths work but an app cannot see them, check App Profile, kernel unmounting, Kasumi views, and feature 107.
 
-For WebView sandbox-only differences, check the non-root profile under Superuser → WebView Zygote and global Kernel Umount. v1.8.0 no longer uses feature 5. Save, reboot fully to recreate the shared Zygote, then check the affected page. Change one backend/module/policy variable at a time. See [Mounting](/en/modules/magic-mount/).
+For WebView sandbox-only differences, check the non-root profile under Superuser → WebView Zygote and global Kernel Umount. Feature 5 is retired. Save, reboot fully to recreate the shared Zygote, then check the affected page. Change one backend/module/policy variable at a time. See [Mounting](/en/modules/magic-mount/).
 
 ## Soft reboot unavailable or recovery failed
 
-Read Manager's reason first. An outdated device-side `ksud`, incomplete boot, safe mode, unrestorable rules, or mount protection can block a request. Synchronize the v1.8.0 `ksud` and check the LKM version before retrying. Reboot fully after changing boot components.
+Read Manager's reason first. An outdated device-side `ksud`, incomplete boot, safe mode, unrestorable rules, or mount protection can block a request. Sync the v1.9.0 `ksud` and check the running LKM version before retrying. Reboot fully after changing boot components.
 
 “Request accepted” means the flow has started; keep waiting for the result. `completed_pending` means Android has started while some hide rules await their parent directories. Check the pending count and Kasumi rule state, then refresh after those directories appear. For `failed`, inspect the phase and error, retain logs, resolve the fault, and reboot fully if needed. Do not repeatedly submit soft-reboot requests. See [Soft reboot](/en/manager/soft-reboot/) for steps and status meanings.
 
@@ -97,7 +99,7 @@ Temporary content is cleaned after execution. The retained last-run record is no
 4. Start the target, then inspect process monitoring, Native targets, module diagnostics, and daemon recovery.
 5. Record PID, process start time, injection result, exit details, and a bugreport.
 
-For an unobserved target, start it and refresh. For injection failure, read the error for that module. If a process exits after successful injection, inspect its exit code and crash log to find why it exited.
+For an unobserved target, start it and refresh. If both successes and failures are shown, open the module details and check the logs for the affected app and time. If a process exits after successful injection, inspect its exit code and crash log to find why it exited.
 
 Global Zygote protection and module crash isolation are separate. Recovering the daemon does not rerun module initialization in existing processes. After successful recovery, restart the target app. If the failure involves Zygote or boot services, or the status shows `reboot_required`, reboot fully before checking injection results. See [Runtime status](/en/yukizygisk/features/) and [Native ZN](/en/yukizygisk/native-zn/).
 

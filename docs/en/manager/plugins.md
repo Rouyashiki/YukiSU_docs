@@ -19,7 +19,7 @@ The page supports:
 - search and optional enabled-first sorting;
 - pull-to-refresh from the real `ksud plugin list` state;
 - enable and disable;
-- Action when the manifest declares it;
+- run a declared Action, or try **Run** for an older manifest that omits action metadata.
 - manifest-declared quick actions;
 - manifest-declared configuration fields;
 - per-plugin log viewing and clearing; and
@@ -39,12 +39,14 @@ Enabling does not replay boot stages that have already passed. If the plugin nee
 
 ## Action, quick actions, and configuration
 
-- **Action** appears only when the plugin actually declares one.
+- **Action** runs the plugin’s `action` callback. For an older manifest with no action metadata, the Manager shows **Run**. Tapping it tries the callback and reports an error if it is missing.
 - **Quick action** invokes the Lua function selected by its manifest.
 - **Configure** stores manifest-defined fields. Plugins that implement runtime reload use them immediately; otherwise follow the plugin instructions to rerun an Action, restart its daemon, or fully reboot.
 - **Plugin log** is that plugin's own record, not the complete `ksud`, kernel, or logcat output.
 
 A successful Action means that invocation returned normally. Check the settings or files it was meant to change; boot callbacks and daemons have separate log results. Disabling or uninstalling does not automatically undo system-file or setting changes made by a plugin. Follow the plugin's restoration instructions.
+
+In the configuration dialog, **Restore defaults** updates the draft. Choose Save to apply it or Cancel to keep your previous values. If only some fields fail to save, the Manager lists those keys and reloads the stored values.
 
 ## Plugin repositories
 
@@ -78,4 +80,4 @@ See [Lua plugins](/en/modules/plugin/) for package layout, manifest, Lua API, an
 
 ## Source references
 
-[Plugin.kt](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/screen/Plugin.kt), [plugin.cpp](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/plugin.cpp).
+[Plugin.kt](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/screen/Plugin.kt), [plugin.cpp](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/plugin/plugin.cpp).

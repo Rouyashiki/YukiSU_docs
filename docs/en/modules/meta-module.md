@@ -72,4 +72,4 @@ Read the backend script log, then inspect the target file. If a root shell sees 
 
 MetaModule does not provide core root, handle Lua plugins under `/data/adb/plugins/`, load `zygisk/*.so` or interpret `zn_modules.txt`. For system-file mount failures, start with backend scripts and target paths.
 
-Source references: [backend selection and interfaces](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/metamodule.cpp), [installation and module state](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module.cpp).
+Source references: [backend selection and interfaces](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/metamodule.cpp), [installation and module state](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module.cpp).

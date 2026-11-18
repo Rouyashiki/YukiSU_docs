@@ -33,6 +33,8 @@ Kagami 在用户空间安排挂载；Kasumi 提供内核映射能力。使用 Ka
 
 [模块热安装](/modules/hot-install/)只切换活动目录，不主动重新挂载。模块带 `skip_mount`、`disable`、`remove` 标记或选择 `none` 模式时，新的挂载计划会跳过它。
 
+v1.9.0 修复了内置 Kagami 在临时加载（late-load）时跳过挂载的问题。模块文件会在 `post-mount` 和 `service` 脚本运行前挂好。这一版也修复了卸载后旧文件留在持久镜像、同一分区被重复挂载的问题。
+
 ## 挂载、脚本与注入
 
 - `post-fs-data.sh`、`service.sh` 等由 `ksud` 派发；
@@ -45,13 +47,13 @@ Kagami 在用户空间安排挂载；Kasumi 提供内核映射能力。使用 Ka
 
 内核可以在 Zygote 派生应用时依据 Root 配置，在应用自己的命名空间卸载模块挂载。排查应用内文件不可见时，查看该应用 PID 的命名空间，而不是只查看 Root shell。
 
-v1.8.0 将 WebView 卸载移到应用配置。到超级用户列表中的 **WebView Zygote**（UID 1053），查看并设置“卸载模块”；它不再是全局独立开关。启用后，其后代继承卸载后的视图，无法读取被卸载的 WebView 资源、库或配置替换。依赖这些替换的模块需要在该条目关闭卸载，随后完整重启。该配置不控制 Zygisk 回调；更多说明见[应用配置](/manager/app-profile/)。
+WebView 的模块卸载由应用配置控制。到超级用户列表中的 **WebView Zygote**（UID 1053），查看并设置“卸载模块”；它不再是全局独立开关。启用后，其后代继承卸载后的视图，无法读取被卸载的 WebView 资源、库或配置替换。依赖这些替换的模块需要在该条目关闭卸载，随后完整重启。该配置不控制 Zygisk 回调；更多说明见[应用配置](/manager/app-profile/)。
 
 YukiZygisk 拒绝名单模式也会结合按应用卸载结果：关闭时不额外改变注入；强制模式跳过目标的普通 Zygisk 注入；恢复模式保留注入，同时保留普通模块挂载的卸载结果。Zygisk 模块自行创建的私有挂载由该模块清理。
 
 ## Kasumi 规则与普通隐藏
 
-v1.8.0 使用 Kasumi API 18。只有内核协议匹配且 Kasumi 已启用时，内置后端才使用它。`auto` 的 OverlayFS/Magic Mount 选择不会因此改变。
+v1.9.0 的内置后端使用 Kasumi API 19。选择 Kasumi 前，先在状态页确认它已启用且内核协议匹配。使用 `auto` 的模块仍由 Kagami 在 OverlayFS 和 Magic Mount 中选择。
 
 Kasumi 模块映射可以设置“绕过策略”：
 
@@ -83,6 +85,6 @@ Kagami 挂载恢复与模块 preinit 使用独立计数。Kagami 保护触发后
 
 仍无法定位时，只启用一个简单文件模块，完整重启后检查文件；再禁用它并重启，检查原文件是否恢复。
 
-源码依据：[内置入口](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/embedded.cpp)、[模式选择与挂载计划](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/mount/backend.cpp)、[默认配置](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/include/kagami/config.hpp)、[管理器控制](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/util/KasumiManager.kt)。
+源码依据：[内置入口](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/embedded.cpp)、[模式选择与挂载计划](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/mount/backend.cpp)、[默认配置](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/include/kagami/config.hpp)、[管理器控制](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/kasumi/util/KasumiManager.kt)。
 
-规则实现：[Kasumi](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/mount/kasumi.cpp).
+规则实现：[Kasumi](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/mount/kasumi.cpp).

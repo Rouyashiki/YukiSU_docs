@@ -7,7 +7,7 @@ title: 越狱模式
 
 不想先改启动镜像，只想让 YukiSU 在当前这次开机里跑起来？这就是越狱模式。
 
-它使用 **late-load**：Android 已经启动后，再加载匹配 KMI 的 `kernelsu.ko`，然后准备 YukiSU 用户空间、模块和管理器环境。下面介绍 v1.8.0 的加载流程。
+它使用 **late-load**：Android 已经启动后，再加载匹配 KMI 的 `kernelsu.ko`，然后准备 YukiSU 用户空间、模块和管理器环境。v1.9.0 加载完会重新打开新版管理器。
 
 ::: warning 重启后就没了
 越狱模式不会把 YukiSU 持久安装进启动镜像。本次开机能用，重启后需要再次越狱，或者改走正常 LKM 安装。
@@ -43,14 +43,14 @@ Permissive 是引导 late-load 的前提，不代表正常安装 YukiSU 后也�
 C++ `ksud` 会依次：
 
 1. 读取当前内核，确定 KMI；
-2. 从管理器资源里提取 `<kmi>_kernelsu.ko`；
-3. 通过内核模块接口加载它；
+2. 在内存中解压并校验与 KMI 匹配的内置 LKM。
+3. 加载 LKM 并检查驱动能否响应，检查通过后才继续准备用户空间。
 4. 准备当前会话需要的 YukiSU 用户空间；
 5. 处理模块更新/卸载、目录上下文、SELinux、App Profile 和 Feature；
 6. 执行 `late-load.d` 与模块的 `late-load.sh`；
 7. 加载 `system.prop`，调用启用的外部 `metamount.sh`，否则使用内置 Kagami；
-8. 接着跑 `post-mount`、`service`、`boot-completed`；
-9. 刷新管理器状态。
+8. 挂载完成后执行 `post-mount`。每次 late-load 都会运行 `service` 和 `boot-completed`。
+9. 重新打开管理器。默认目标是 `org.rouyashiki.yukisu`。
 
 模块目录和 MetaModule 接口保持兼容。late-load 只执行下面列出的阶段，不补跑已经错过的早启动动作。
 
@@ -133,7 +133,7 @@ Permissive 会削弱 SELinux 隔离。日常长期使用，正常安装匹配 KM
 
 正常现象，这就是临时模式。要一直保留，请用正常 LKM 安装。
 
-v1.8.0 会在 late-load 模式下确认普通重启操作，避免误以为临时 Root 会随完整重启保留。需要持久安装时，先准备镜像和恢复方法再重启。
+在 late-load 模式下点普通重启，管理器会让你确认，避免误以为临时 Root 会随完整重启保留。需要持久安装时，先准备镜像和恢复方法再重启。
 
 ## 参考
 

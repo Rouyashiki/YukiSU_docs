@@ -5,7 +5,7 @@ title: Boot-image commands
 
 # Boot-image commands
 
-YukiSU v1.8.0 provides two image backends: traditional Ramdisk `boot-patch` and direct-kernel `boot-patch-v2`. Choose the command for your installation mode; their inputs, backups and target partitions are described below.
+YukiSU provides two image backends: traditional Ramdisk `boot-patch` and direct-kernel `boot-patch-v2`. Choose the command for your installation mode; their inputs, backups and target partitions are described below.
 
 ::: danger `--flash` / `-f` writes partitions
 The file examples below only create images. In device-partition mode, `--flash` / `-f` writes directly to the partition; `--ota` by itself only selects the inactive slot. Before flashing, use the `boot-info` commands below to confirm the target KMI, slot and partition.
@@ -169,9 +169,9 @@ After deploying the generated image, reboot and check root authorization and the
 
 ## Source entry points
 
-- [`boot-patch`, `boot-restore` and `boot-info`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch.cpp)
-- [`boot-patch-v2`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_patch_v2.cpp)
-- [ImgPatch LKM configuration ABI](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/uapi/imgpatch_config.h)
-- [Manager command construction and KMI resolution](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/util/KsuCli.kt)
-- [Boot argument validation](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_config.hpp)
-- [Backup identity](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/boot/boot_backup.cpp)
+- [`boot-patch`, `boot-restore` and `boot-info`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_patch.cpp)
+- [`boot-patch-v2`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_patch_v2.cpp)
+- [ImgPatch LKM configuration ABI](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/uapi/imgpatch_config.h)
+- [Manager command construction and KMI resolution](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/util/KsuCli.kt)
+- [Boot argument validation](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_config.hpp)
+- [Backup identity](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/boot/boot_backup.cpp)

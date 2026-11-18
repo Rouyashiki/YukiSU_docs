@@ -46,4 +46,4 @@ revision 属于会话内的 **Ramdisk 分片**，不是单个文件；同分片�
 
 请求方必须写完完整帧才能等待响应；保存时不能在同一串行会话中嵌套 `READ`。当前内容上限 512 MiB、编辑片段上限 262144，超过限制的编辑请求会被拒绝。
 
-完整节点记录、20 个 opcode、capability mask、状态码、编辑计划布局和 96 字节 ELF header 见[协议规范](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/docs/ramdisk-editor-protocol.md)。客户端应按该规范实现帧解析和错误处理。
+完整节点记录、20 个 opcode、capability mask、状态码、编辑计划布局和 96 字节 ELF header 见[协议规范](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/docs/ramdisk-editor-protocol.md)。客户端应按该规范实现帧解析和错误处理。

@@ -33,6 +33,8 @@ An ordinary post-boot Kasumi refresh only replays modules recorded in this boot'
 
 [Hot installation](/en/modules/hot-install/) switches the active directory without remounting. The new mount plan skips modules marked `skip_mount`, `disable` or `remove`, and modules set to `none`.
 
+With v1.9.0, built-in Kagami mounts module files during late-load before `post-mount` and `service` scripts run. The release also fixes files left in the persistent image after module removal and duplicate mounts for the same partition.
+
 ## Mounting, scripts and injection
 
 - `ksud` dispatches `post-fs-data.sh`, `service.sh` and other scripts;
@@ -45,13 +47,13 @@ If scripts succeed but files are missing, inspect the mount plan. If system path
 
 The kernel can unmount module mounts in a Zygote child's own namespace according to its root profile. When files are missing inside an app, inspect that app PID's namespace rather than only the root shell.
 
-v1.8.0 moves WebView unmounting into app profiles. Open **WebView Zygote** (UID 1053) in the superuser list and inspect its “Unmount modules” setting; there is no separate global WebView switch. When enabled, its descendants inherit the unmounted view and cannot read the removed WebView resource, library or configuration replacements. Disable unmounting for this entry when your module depends on those replacements, then fully reboot. This setting does not control Zygisk callbacks. See [App profiles](/en/manager/app-profile/).
+The app profile controls module unmounting for WebView. Open **WebView Zygote** (UID 1053) in the superuser list and inspect its “Unmount modules” setting; there is no separate global WebView switch. When enabled, its descendants inherit the unmounted view and cannot read the removed WebView resource, library or configuration replacements. Disable unmounting for this entry when your module depends on those replacements, then fully reboot. This setting does not control Zygisk callbacks. See [App profiles](/en/manager/app-profile/).
 
 YukiZygisk denylist modes also use per-app unmount results. Disabled mode adds no injection restriction; Enforce skips ordinary Zygisk injection for targets; Restore retains injection while preserving ordinary-module unmounting. Zygisk modules must clean up their own private mounts.
 
 ## Kasumi rules and ordinary hiding
 
-v1.8.0 uses Kasumi API 18. The built-in backend uses it only when the kernel protocol matches and Kasumi is enabled. This does not change the OverlayFS/Magic Mount selection used by `auto`.
+The built-in backend in v1.9.0 uses Kasumi API 19. If you select Kasumi, check that it is enabled and the running kernel reports a matching protocol. For modules set to `auto`, Kagami still chooses between OverlayFS and Magic Mount.
 
 Kasumi module mappings can bypass policy:
 
@@ -83,6 +85,6 @@ Kagami mount recovery and module preinit use separate counters. When Kagami prot
 
 If the cause remains unclear, enable one simple file module, fully reboot and inspect its file. Then disable the module, reboot and check that the original file is restored.
 
-Source references: [built-in entry](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/embedded.cpp), [mode selection and mount plans](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/mount/backend.cpp), [defaults](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/include/kagami/config.hpp), [manager controls](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/manager/app/src/main/java/com/anatdx/yukisu/ui/kasumi/util/KasumiManager.kt).
+Source references: [built-in entry](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/embedded.cpp), [mode selection and mount plans](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/mount/backend.cpp), [defaults](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/include/kagami/config.hpp), [manager controls](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/manager/app/src/main/java/org/rouyashiki/yukisu/ui/kasumi/util/KasumiManager.kt).
 
-Rule implementation: [Kasumi](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/kagami/src/mount/kasumi.cpp).
+Rule implementation: [Kasumi](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/kagami/src/mount/kasumi.cpp).

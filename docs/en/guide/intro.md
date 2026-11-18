@@ -5,19 +5,19 @@ title: Introduction
 
 # Introducing YukiSU
 
-This site targets **v1.8.0 (2026-11-02)**, with Manager version code **10670**. Interface controls, command arguments, and configuration behavior are documented for this release.
+These guides cover **v1.9.0**, released November 16, 2026, with Manager version code **10745**. The app has a new package name and signing certificate. If you already have YukiSU installed, Android will show a second Manager icon. [v1.9.0 release notes](https://github.com/Rouyashiki/YukiSU/releases/tag/v1.9.0)
 
-YukiSU is a kernel-level root solution for **Android 12+ ARM64 GKI 2.0** devices, forked from [SukiSU-Ultra](https://github.com/ShirkNeko/SukiSU-Ultra). It combines an LKM, C++ userspace, and its own Manager while supporting KernelSU-style authorization, App Profile, and modules.
+YukiSU lets you choose which apps get root on a supported Android device. Its Manager also installs modules and patches boot images. YukiSU grew out of [SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra) and supports KernelSU-style app grants and modules.
 
-New to YukiSU? Start with [Get started](/en/guide/get-started/). Existing users should follow [Updating](/en/guide/update/) and check configuration migration.
+New to YukiSU? Start with [Get started](/en/guide/get-started/). If you have an older Manager, follow the [upgrade guide](/en/guide/update/) to keep your settings and backups at hand as you switch.
 
 ## Components
 
 | Component | Responsibility |
 | --- | --- |
-| `kernelsu.ko` | Kernel authorization, hooks, features, App Profile, and Kasumi |
+| `kernelsu.ko` | The kernel module (LKM) enforces root grants, app profiles, and Kasumi rules |
 | `ksuinit` / ImgPatch bootstrap | Load the LKM through the Ramdisk or kernel-image layout |
-| `ksud` and `su` | Modules, installation, policies, diagnostics, and userspace elevation |
+| `ksud` and `su` | `ksud` handles installation, runs modules, and collects diagnostics. Apps request root through `su`. |
 | Manager | Authorization, configuration, installation, modules, and partition tools |
 | Built-in Kagami / external MetaModule | Mount module files over system paths |
 | YukiZygisk | Optional Zygisk and Native ZN injection runtime |
@@ -36,7 +36,7 @@ If root works but a Zygisk module does not, open YukiZygisk and check injection 
 
 Android 11 and earlier, GKI 1.0, non-GKI, ARM32, x86_64, and built-in `CONFIG_KSU=y` are unsupported. YukiZygisk's 32-bit components serve 32-bit apps on ARM64 devices; they do not add ARM32 device support.
 
-Full builds maintain eight standard KMI targets from `android12-5.10` to `android17-6.18`. Select an LKM by actual KMI, vermagic, symbols, and configuration, not the phone's Android version. See [Compatibility](/en/guide/compatibility/).
+The release provides eight kernel modules, from `android12-5.10` to `android17-6.18`. A phone can keep the same kernel when it updates Android. Use the kernel’s KMI identifier to find its matching module in [Compatibility](/en/guide/compatibility/).
 
 ## Current capabilities
 
@@ -44,7 +44,7 @@ Full builds maintain eight standard KMI targets from `android12-5.10` to `androi
 - Ramdisk, ImgPatch, and temporary late-load, plus configuration-only Ramdisk patches that preserve any existing LKM instead of installing or replacing one.
 - Built-in Kagami mounting with external MetaModule precedence; built-in Kasumi for su, path rules, and mount views.
 - Ordinary modules, one-shot scripts, opt-in hot installation, and early preinit actions.
-- Fifteen features, forced boot configuration, optional SuperKey, dynamic managers, and UTS View.
+- Thirteen features, forced boot configuration, optional SuperKey, dynamic managers, and UTS View.
 - YukiZygisk load policies, process monitoring, exit evidence, and crash protection.
 - Remote-image extraction, partition backups, AVB controls, text/binary Ramdisk editing, and diagnostic export.
 
@@ -52,11 +52,11 @@ See [Feature overview](/en/guide/features/) and the [KernelSU comparison](/en/gu
 
 ## Important distinctions
 
-Installing an APK does not load the LKM. Synchronizing `ksud` does not update boot images. TSR follows KernelSU LKM's tracepoint syscall-redirect model, but the projects' binaries and private interfaces are not interchangeable.
+Installing the APK gives you the Manager. Apps can request root once you load a matching LKM. Syncing `ksud` updates the userspace tools. To replace the LKM in your boot image, patch the image and fully reboot.
 
-SuperKey authenticates a manager UID; it is not an app root password. YukiZygisk can be disabled while basic root and ordinary modules remain available. Installation, mounting, and a module's intended effect require separate checks.
+The official Manager uses its signing certificate for authentication. Custom builds can also use SuperKey. You grant root to individual apps on the Superuser page. Enable YukiZygisk if you use Zygisk modules.
 
-Choose an LKM matching the target KMI, then select modules for the Android version, ABI, and interfaces listed by their authors. For failures, include complete LKM, installed `ksud`, and Manager versions and follow [Troubleshooting](/en/troubleshoot/common/).
+Before installing a module, check the Android version, ABI, and interfaces its author lists. If you report an issue, include the full versions of the Manager, the running LKM, and the installed `ksud`. [Troubleshooting](/en/troubleshoot/common/)
 
 ## Documentation and community
 

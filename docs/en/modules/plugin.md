@@ -65,11 +65,13 @@ After declaring a callback in `callbacks`, implement the matching function in th
 
 Each callback creates a new Lua state and reloads the entry. Store state shared across callbacks in plugin configuration or a data file; Lua globals do not persist.
 
+When porting a FolkPatch or FinaSU plugin, start with its Lua source and the APIs the projects share. Check that it runs under Lua 5.5. Rebuild Lua 5.4 bytecode and native extensions for the current runtime. [Plugin compatibility notes](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/docs/lua-plugin-compatibility.md)
+
 ## `plugin.json` fields
 
 In addition to name, version, author, description, license and entry metadata, the manifest supports:
 
-- `min_version`: minimum `ksud` version code;
+- `min_version` is optional. A nonnegative integer is reported in the output of `ksud plugin list`. YukiSU does not enforce it at install or runtime.
 - `depends`: plugin ID array; dependencies must be installed and enabled and execute in topological order;
 - `descriptions`: localized descriptions keyed by language tag;
 - `callbacks` and `has_action`: action metadata used by the manager;
@@ -87,7 +89,7 @@ Installation and state changes validate dependencies. `ksud` refuses to disable 
 | `service` | Service stage | Detached background worker |
 | `boot_completed` | Boot-completed stage | Detached background worker |
 | `action` or another manual callback | Manager/`ksud plugin run` | Blocking, 300-second limit per run |
-| `main` | Automatically detected at service stage | Starts as a managed daemon callback at a one-second interval |
+| `main` | Auto-detected at the service stage when `callbacks` is omitted. An explicit list must include `main`. | Starts as a managed daemon callback at a one-second interval |
 
 Use `start_daemon("callback", seconds)` for periodic tasks. `ksud` manages the task and stops it when the plugin is disabled or uninstalled.
 
@@ -124,7 +126,7 @@ The runtime also exposes:
 
 Each Lua state is limited to 64 MiB. Command output, file reads and JSON input have separate limits. Timeout and size failures are recorded in `last_output.log`.
 
-The source contract is defined by [`plugin.hpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/plugin.hpp), [`plugin.cpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/plugin.cpp) and [`lua_engine.cpp`](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/plugin/lua_engine.cpp).
+The source contract is defined by [`plugin.hpp`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/plugin/plugin.hpp), [`plugin.cpp`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/plugin/plugin.cpp) and [`lua_engine.cpp`](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/plugin/lua_engine.cpp).
 
 ## Plugin repositories
 

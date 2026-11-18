@@ -72,4 +72,4 @@ MetaModule 不支持[热安装](/modules/hot-install/)。管理器对带 `metain
 
 MetaModule 不提供核心 Root，不负责 `/data/adb/plugins/` 下的 Lua 插件，也不加载 `zygisk/*.so` 或解释 `zn_modules.txt`。系统文件挂载问题请从后端脚本和目标路径排查。
 
-源码依据：[后端选择与接口派发](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/metamodule.cpp)、[安装及模块状态](https://github.com/Rouyashiki/YukiSU/blob/9d046af49e2a43120a05a06d7c9dbc76ca824d76/userspace/ksud/src/module/module.cpp)。
+源码依据：[后端选择与接口派发](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/metamodule.cpp)、[安装及模块状态](https://github.com/Rouyashiki/YukiSU/blob/a66faee724c6ff2d79757cb1cc8030fdf71a30f8/userspace/ksud/src/module/module.cpp)。
